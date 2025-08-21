@@ -1,0 +1,18 @@
+{{ template "header.html" . }}
+
+<div class="container">
+    <h2>Welcome, {{ .Username }}!</h2>
+
+    <p>You are now logged in 🎉</p>
+
+    <div class="actions">
+        <a href="/profile">Go to Profile</a>
+        <form action="/logout" method="post">
+            <button type="submit" class="link-button">Logout</button>
+        </form>
+    </div>
+
+
+</div>
+
+{{ template "footer.html" . }}
