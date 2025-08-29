@@ -1,0 +1,8 @@
+CREATE TABLE upload_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    password TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    link_token TEXT NOT NULL UNIQUE
+);

@@ -1,0 +1,7 @@
+{{ template "header.html" . }}
+
+<p class="text-center">Successfully registered {{.LinkName}} 🎉.</p>
+<p class="text-center mt-2">
+    <a href="/links/{{.LinkValue}}" class="text-blue-500 hover:underline">Upload here</a>
+</p>
+{{ template "footer.html" . }}

@@ -1,18 +1,24 @@
 {{ template "header.html" . }}
 
-<div class="container">
-    <h2>Welcome, {{ .Username }}!</h2>
+<div class="bg-white p-8 rounded-xl shadow-md max-w-md w-full">
+    <h2 class="mb-6 text-center text-xl font-semibold text-gray-700">
+        Welcome, {{ .Username }}!
+    </h2>
 
-    <p>You are now logged in 🎉</p>
+    <p class="text-center">You are now logged in 🎉</p>
 
-    <div class="actions">
-        <a href="/profile">Go to Profile</a>
-        <form action="/logout" method="post">
-            <button type="submit" class="link-button">Logout</button>
+    <div class="flex justify-center gap-4 mt-6">
+        <a href="/profile" class="text-blue-500 hover:underline">Go to Profile</a>
+        <a href="/upload-link" class="text-blue-500 hover:underline">Create upload link</a>
+        <form action="/logout" method="post" class="inline m-0 p-0">
+            <button
+                    type="submit"
+                    class="bg-transparent border-none text-blue-500 underline cursor-pointer p-0 font-inherit"
+            >
+                Logout
+            </button>
         </form>
     </div>
-
-
 </div>
 
 {{ template "footer.html" . }}

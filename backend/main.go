@@ -20,7 +20,12 @@ func main() {
 
 	repo := repository.NewUserRepository(db)
 	s := repository.NewSessionRepository(db)
+	u := repository.NewLinkTokenRepository(db)
+	a := repository.NewUploadLinkSessionRepository(db)
 	svc := service.NewAuthService(repo, s)
+	uSvc := service.NewUploadLinkService(u)
+	uuSvc := service.NewUploadLinkSessionService(a)
+
 	tmpl := template.Must(template.ParseGlob("templates/*.html"))
 
 	authService := service.NewAuthService(repo, s)
@@ -31,18 +36,26 @@ func main() {
 	dashboardHandler := handler.NewDashboardHandler(tmpl)
 	rootHandler := handler.NewRootHandler(svc)
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	uploadLinkHandler := handler.NewUploadLinkHandler(uSvc, uuSvc, tmpl)
 
-	http.Handle("/register", guest.WithoutAuth(http.HandlerFunc(authHandler.Register)))
+	mux := http.NewServeMux()
 
-	http.Handle("/login", guest.WithoutAuth(http.HandlerFunc(authHandler.Login)))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	http.Handle("/logout", auth.WithAuth(http.HandlerFunc(authHandler.Logout)))
+	mux.Handle("/register", guest.WithoutAuth(http.HandlerFunc(authHandler.Register)))
 
-	http.Handle("/dashboard", auth.WithAuth(http.HandlerFunc(dashboardHandler.Dashboard)))
+	mux.Handle("/login", guest.WithoutAuth(http.HandlerFunc(authHandler.Login)))
 
-	http.HandleFunc("/", rootHandler.Root)
+	mux.Handle("/logout", auth.WithAuth(http.HandlerFunc(authHandler.Logout)))
+
+	mux.Handle("/dashboard", auth.WithAuth(http.HandlerFunc(dashboardHandler.Dashboard)))
+
+	mux.Handle("/links/create", auth.WithAuth(http.HandlerFunc(uploadLinkHandler.CreateUploadLink)))
+	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadLinkHandler.ShowLinks)))
+	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadLinkHandler.VisitUploadLink)))
+
+	mux.HandleFunc("/", rootHandler.Root)
 
 	log.Println("listening on :8080")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", mux)
 }
