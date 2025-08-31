@@ -3,51 +3,48 @@ package repository
 import (
 	"context"
 	"database/sql"
+
 	"github.com/NiClassic/go-cloud/internal/model"
 )
 
-type UploadLinkSessionRepository struct {
-	db *sql.DB
-}
+type UploadLinkSessionRepository struct{ baseRepo }
 
 func NewUploadLinkSessionRepository(db *sql.DB) *UploadLinkSessionRepository {
-	return &UploadLinkSessionRepository{db: db}
+	return &UploadLinkSessionRepository{newBaseRepo(db)}
 }
 
-func (u *UploadLinkSessionRepository) Insert(
+func (r *UploadLinkSessionRepository) Insert(
 	ctx context.Context,
-	userID, uploadLinkID int64, sessionToken string) (int64, error) {
-	query := `INSERT INTO upload_link_sessions (user_id, upload_link_id, session_token) VALUES (?, ?, ?)`
-	result, err := u.db.ExecContext(ctx, query, userID, uploadLinkID, sessionToken)
+	userID, uploadLinkID int64,
+	sessionToken string,
+) (int64, error) {
+	const q = `INSERT INTO upload_link_sessions (user_id, upload_link_id, session_token) VALUES (?, ?, ?)`
+	res, err := r.db.ExecContext(ctx, q, userID, uploadLinkID, sessionToken)
 	if err != nil {
 		return 0, err
 	}
-	return result.LastInsertId()
+	return res.LastInsertId()
 }
 
-func (u *UploadLinkSessionRepository) GetByToken(
+func (r *UploadLinkSessionRepository) GetByToken(
 	ctx context.Context,
-	token string) (*model.UploadLinkSession, error) {
-	query := `SELECT id, user_id, upload_link_id, created_at, valid, session_token FROM upload_link_sessions WHERE session_token = ?`
-
-	row := u.db.QueryRowContext(ctx, query, token)
-
-	var uploadLinkSession model.UploadLinkSession
-	err := row.Scan(
-		&uploadLinkSession.ID,
-		&uploadLinkSession.UserID,
-		&uploadLinkSession.UploadLinkID,
-		&uploadLinkSession.CreatedAt,
-		&uploadLinkSession.Valid,
-		&uploadLinkSession.SessionToken,
-	)
-	return &uploadLinkSession, err
+	token string,
+) (*model.UploadLinkSession, error) {
+	const q = `
+		SELECT id, user_id, upload_link_id, created_at, valid, session_token
+		FROM upload_link_sessions
+		WHERE session_token = ?`
+	var uls model.UploadLinkSession
+	if err := r.db.QueryRowContext(ctx, q, token).Scan(
+		&uls.ID, &uls.UserID, &uls.UploadLinkID, &uls.CreatedAt, &uls.Valid, &uls.SessionToken,
+	); err != nil {
+		return nil, err
+	}
+	return &uls, nil
 }
 
-func (u *UploadLinkSessionRepository) Invalidate(
-	ctx context.Context, token string) error {
-	query := `UPDATE upload_link_sessions SET valid = 0 WHERE session_token = ?`
-
-	_, err := u.db.ExecContext(ctx, query, token)
+func (r *UploadLinkSessionRepository) Invalidate(ctx context.Context, token string) error {
+	const q = `UPDATE upload_link_sessions SET valid = 0 WHERE session_token = ?`
+	_, err := r.db.ExecContext(ctx, q, token)
 	return err
 }

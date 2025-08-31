@@ -20,7 +20,7 @@ func main() {
 
 	repo := repository.NewUserRepository(db)
 	s := repository.NewSessionRepository(db)
-	u := repository.NewLinkTokenRepository(db)
+	u := repository.NewUploadLinkRepository(db)
 	a := repository.NewUploadLinkSessionRepository(db)
 	svc := service.NewAuthService(repo, s)
 	uSvc := service.NewUploadLinkService(u)

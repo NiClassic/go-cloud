@@ -7,80 +7,50 @@ import (
 	"github.com/NiClassic/go-cloud/internal/model"
 )
 
-type SessionRepository struct {
-	db *sql.DB
-}
+type SessionRepository struct{ baseRepo }
 
 func NewSessionRepository(db *sql.DB) *SessionRepository {
-	return &SessionRepository{
-		db: db,
-	}
+	return &SessionRepository{newBaseRepo(db)}
 }
 
-// Insert creates a new session for a user and returns the session ID.
-func (s *SessionRepository) Insert(
+func (r *SessionRepository) Insert(
 	ctx context.Context,
 	userID int64,
 	sessionToken string,
 ) (int64, error) {
-	query := `
-		INSERT INTO sessions (user_id, session_token)
-		VALUES (?, ?)
-	`
-	result, err := s.db.ExecContext(ctx, query, userID, sessionToken)
+	const q = `INSERT INTO sessions (user_id, session_token) VALUES (?, ?)`
+	res, err := r.db.ExecContext(ctx, q, userID, sessionToken)
 	if err != nil {
 		return 0, err
 	}
-	return result.LastInsertId()
+	return res.LastInsertId()
 }
 
-// GetByToken retrieves a session by its token.
-func (s *SessionRepository) GetByToken(
+func (r *SessionRepository) GetByToken(
 	ctx context.Context,
 	token string,
 ) (*model.Session, error) {
-	query := `
+	const q = `
 		SELECT id, user_id, created_at, valid, session_token
 		FROM sessions
-		WHERE session_token = ?
-	`
-	row := s.db.QueryRowContext(ctx, query, token)
-
-	var session model.Session
-	err := row.Scan(
-		&session.ID,
-		&session.UserID,
-		&session.CreatedAt,
-		&session.Valid,
-		&session.SessionToken,
-	)
-	if err != nil {
+		WHERE session_token = ?`
+	var s model.Session
+	if err := r.db.QueryRowContext(ctx, q, token).Scan(
+		&s.ID, &s.UserID, &s.CreatedAt, &s.Valid, &s.SessionToken,
+	); err != nil {
 		return nil, err
 	}
-
-	return &session, nil
+	return &s, nil
 }
 
-// Invalidate marks a session as invalid (logout).
-func (s *SessionRepository) Invalidate(
-	ctx context.Context,
-	token string,
-) error {
-	query := `
-		UPDATE sessions
-		SET valid = 0
-		WHERE session_token = ?
-	`
-	_, err := s.db.ExecContext(ctx, query, token)
+func (r *SessionRepository) Invalidate(ctx context.Context, token string) error {
+	const q = `UPDATE sessions SET valid = 0 WHERE session_token = ?`
+	_, err := r.db.ExecContext(ctx, q, token)
 	return err
 }
 
-// DeleteByUser removes all sessions for a given user (optional helper).
-func (s *SessionRepository) DeleteByUser(
-	ctx context.Context,
-	userID int64,
-) error {
-	query := `DELETE FROM sessions WHERE user_id = ?`
-	_, err := s.db.ExecContext(ctx, query, userID)
+func (r *SessionRepository) DeleteByUser(ctx context.Context, userID int64) error {
+	const q = `DELETE FROM sessions WHERE user_id = ?`
+	_, err := r.db.ExecContext(ctx, q, userID)
 	return err
 }

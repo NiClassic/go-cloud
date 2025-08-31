@@ -3,44 +3,46 @@ package repository
 import (
 	"context"
 	"database/sql"
+
 	"github.com/NiClassic/go-cloud/internal/model"
 )
 
-type UserRepository struct {
-	db *sql.DB
-}
+type UserRepository struct{ baseRepo }
 
 func NewUserRepository(db *sql.DB) *UserRepository {
-	return &UserRepository{
-		db: db,
-	}
+	return &UserRepository{newBaseRepo(db)}
 }
 
-func (u *UserRepository) Insert(ctx context.Context, username, hashedPassword string) (int64, error) {
-	query := `INSERT INTO users (username, password) VALUES (?, ?)`
-	result, err := u.db.ExecContext(ctx, query, username, hashedPassword)
+func (r *UserRepository) Insert(
+	ctx context.Context,
+	username, hashedPassword string,
+) (int64, error) {
+	const q = `INSERT INTO users (username, password) VALUES (?, ?)`
+	res, err := r.db.ExecContext(ctx, q, username, hashedPassword)
 	if err != nil {
 		return 0, err
 	}
-	return result.LastInsertId()
+	return res.LastInsertId()
 }
-func (u *UserRepository) GetByUsername(_ context.Context, username string) (*model.User, error) {
-	query := `SELECT * FROM users WHERE username = ?`
-	row := u.db.QueryRow(query, username)
-	var user model.User
-	err := row.Scan(&user.ID, &user.Username, &user.HashedPassword)
-	if err != nil {
+
+func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+	const q = `SELECT id, username, password FROM users WHERE username = ?`
+	var u model.User
+	if err := r.db.QueryRowContext(ctx, q, username).Scan(
+		&u.ID, &u.Username, &u.HashedPassword,
+	); err != nil {
 		return nil, err
 	}
-
-	return &user, nil
+	return &u, nil
 }
 
-func (u *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, error) {
-	query := `SELECT * FROM users WHERE id = ?`
-	row := u.db.QueryRow(query, id)
-
-	var user model.User
-	err := row.Scan(&user.ID, &user.Username, &user.HashedPassword)
-	return &user, err
+func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, error) {
+	const q = `SELECT id, username, password FROM users WHERE id = ?`
+	var u model.User
+	if err := r.db.QueryRowContext(ctx, q, id).Scan(
+		&u.ID, &u.Username, &u.HashedPassword,
+	); err != nil {
+		return nil, err
+	}
+	return &u, nil
 }
