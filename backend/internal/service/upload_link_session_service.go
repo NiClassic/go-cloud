@@ -7,27 +7,34 @@ import (
 )
 
 type UploadLinkSessionService struct {
-	r *repository.UploadLinkSessionRepository
+	repo *repository.UploadLinkSessionRepository
 }
 
 func NewUploadLinkSessionService(r *repository.UploadLinkSessionRepository) *UploadLinkSessionService {
-	return &UploadLinkSessionService{r: r}
+	return &UploadLinkSessionService{repo: r}
 }
 
-func (u *UploadLinkSessionService) RegisterSession(ctx context.Context, uploadLink *model.UploadLink, user *model.User) (string, error) {
-	token := generateToken()
-	_, err := u.r.Insert(ctx, user.ID, uploadLink.ID, token)
-	return token, err
+func (u *UploadLinkSessionService) RegisterSession(
+	ctx context.Context,
+	link *model.UploadLink,
+	user *model.User,
+) (string, error) {
+	tok, err := generateToken()
+	if err != nil {
+		return "", err
+	}
+	_, err = u.repo.Insert(ctx, user.ID, link.ID, tok)
+	return tok, err
 }
 
 func (u *UploadLinkSessionService) ValidateSession(ctx context.Context, token string) (bool, error) {
-	session, err := u.r.GetByToken(ctx, token)
+	sess, err := u.repo.GetByToken(ctx, token)
 	if err != nil {
 		return false, err
 	}
-	return session.Valid, err
+	return sess.Valid, nil
 }
 
 func (u *UploadLinkSessionService) DestroySession(ctx context.Context, token string) error {
-	return u.r.Invalidate(ctx, token)
+	return u.repo.Invalidate(ctx, token)
 }
