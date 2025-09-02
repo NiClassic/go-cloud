@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
 	"log"
 	"net/http"
@@ -21,6 +22,8 @@ func main() {
 	}
 	defer db.Close()
 
+	storage := storage.NewStorage("/home/nico/Code/go/go-cloud/data")
+
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
@@ -29,6 +32,7 @@ func main() {
 	authSvc := service.NewAuthService(userRepo, sessRepo)
 	linkSvc := service.NewUploadLinkService(linkRepo)
 	linkSessSvc := service.NewUploadLinkSessionService(linkSessRepo)
+	pFileSvc := service.NewPersonalFileService(storage)
 
 	dirs := []string{
 		"templates/*.html",
@@ -55,7 +59,7 @@ func main() {
 	dashH := handler.NewDashboardHandler(tmpl)
 	rootH := handler.NewRootHandler(authSvc)
 	uploadH := handler.NewUploadLinkHandler(linkSvc, linkSessSvc, tmpl)
-	pFileH := handler.NewPersonalFileUploadHandler(tmpl)
+	pFileH := handler.NewPersonalFileUploadHandler(tmpl, storage, pFileSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))

@@ -55,7 +55,13 @@
         </button>
     </form>
 
-    <div id="file-list" class="mt-6"></div>
+    <div id="file-list" class="mt-6">
+        <ul class="space-y-1 text-sm text-gray-700 break-all">
+            {{ range .Files }}
+            <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+    </div>
 
     <div class="mt-10 text-center">
         <a href="/backend/static" class="text-blue-500 hover:underline">← Back to dashboard</a>
