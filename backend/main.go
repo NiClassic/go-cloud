@@ -35,6 +35,7 @@ func main() {
 	dashH := handler.NewDashboardHandler(tmpl)
 	rootH := handler.NewRootHandler(authSvc)
 	uploadH := handler.NewUploadLinkHandler(linkSvc, linkSessSvc, tmpl)
+	pFileH := handler.NewPersonalFileUploadHandler(tmpl)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -49,6 +50,8 @@ func main() {
 	mux.Handle("/links/create", auth.WithAuth(http.HandlerFunc(uploadH.CreateUploadLink)))
 	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadH.ShowLinks)))
 	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadH.VisitUploadLink)))
+	mux.Handle("/files", auth.WithAuth(http.HandlerFunc(pFileH.ListFiles)))
+	mux.Handle("/files/upload", auth.WithAuth(http.HandlerFunc(pFileH.UploadFiles)))
 	mux.HandleFunc("/", rootH.Root)
 
 	log.Println("listening on :8080")

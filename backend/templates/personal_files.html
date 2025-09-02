@@ -1,0 +1,65 @@
+{{ template "header.html" . }}
+
+<div class="m-8 p-6 sm:p-8 md:p-12 bg-white rounded-xl shadow-lg w-full">
+    <h3 class="mb-6 text-center text-lg font-semibold text-gray-700">
+        Your files
+    </h3>
+
+    <form hx-post="/files/upload"
+          hx-target="#file-list"
+          hx-swap="innerHTML"
+          enctype="multipart/form-data"
+          class="space-y-4">
+
+        <label for="files"
+               class="block w-full cursor-pointer rounded-md border-2 border-dashed border-gray-300 p-4 text-center text-gray-600 hover:border-blue-400 hover:text-blue-600 transition">
+            <span class="font-medium">Choose files</span>
+            <input id="files"
+                   name="files"
+                   type="file"
+                   multiple
+                   class="sr-only"
+            >
+        </label>
+
+        <ul id="selected-files" class="mt-2 text-sm text-gray-600 space-y-1"></ul>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const form  = document.querySelector('form[hx-post="/files/upload"]');
+                const input = document.getElementById('files');
+                const list  = document.getElementById('selected-files');
+
+                // show selected files
+                input.addEventListener('change', () => {
+                    list.innerHTML = '';
+                    [...input.files].forEach(f => {
+                        const li = document.createElement('li');
+                        li.textContent = f.name;
+                        list.appendChild(li);
+                    });
+                });
+
+                // clear after successful upload
+                form.addEventListener('htmx:afterRequest', (evt) => {
+                    if (evt.detail.successful) {
+                        list.innerHTML = '';
+                        input.value   = '';
+                    }
+                });
+            });
+        </script>
+
+        <button type="submit"
+                class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition">
+            Upload
+        </button>
+    </form>
+
+    <div id="file-list" class="mt-6"></div>
+
+    <div class="mt-10 text-center">
+        <a href="/" class="text-blue-500 hover:underline">← Back to dashboard</a>
+    </div>
+</div>
+
+{{ template "footer.html" . }}
