@@ -2,15 +2,18 @@ package middleware
 
 import (
 	"context"
-	"github.com/NiClassic/go-cloud/internal/service"
+	"github.com/NiClassic/go-cloud/internal/handler"
 	"net/http"
+
+	"github.com/NiClassic/go-cloud/internal/service"
 )
 
-const ContextUserKey = "user"
+const (
+	cookieName   = "session_token"
+	redirectPath = "/login"
+)
 
-type SessionValidator struct {
-	svc *service.AuthService
-}
+type SessionValidator struct{ svc *service.AuthService }
 
 func NewSessionValidator(svc *service.AuthService) *SessionValidator {
 	return &SessionValidator{svc: svc}
@@ -18,19 +21,37 @@ func NewSessionValidator(svc *service.AuthService) *SessionValidator {
 
 func (s *SessionValidator) WithAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session_token")
+		cookie, err := r.Cookie(cookieName)
 		if err != nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 			return
 		}
 
-		user, err := s.svc.GetUserBySessionToken(context.TODO(), cookie.Value)
+		user, err := s.svc.GetUserBySessionToken(r.Context(), cookie.Value)
 		if err != nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ContextUserKey, user)
+		ctx := context.WithValue(r.Context(), handler.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+type GuestOnly struct{ svc *service.AuthService }
+
+func NewGuestOnly(svc *service.AuthService) *GuestOnly {
+	return &GuestOnly{svc: svc}
+}
+
+func (g *GuestOnly) WithoutAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if cookie, err := r.Cookie(cookieName); err == nil {
+			if user, err := g.svc.GetUserBySessionToken(r.Context(), cookie.Value); err == nil && user != nil {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
 	})
 }

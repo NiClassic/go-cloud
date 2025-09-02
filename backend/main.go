@@ -2,14 +2,15 @@ package main
 
 import (
 	"database/sql"
+	"html/template"
+	"log"
+	"net/http"
+
 	"github.com/NiClassic/go-cloud/internal/handler"
 	"github.com/NiClassic/go-cloud/internal/middleware"
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/service"
-	"html/template"
-	"log"
 	_ "modernc.org/sqlite"
-	"net/http"
 )
 
 func main() {
@@ -17,45 +18,39 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
-	repo := repository.NewUserRepository(db)
-	s := repository.NewSessionRepository(db)
-	u := repository.NewUploadLinkRepository(db)
-	a := repository.NewUploadLinkSessionRepository(db)
-	svc := service.NewAuthService(repo, s)
-	uSvc := service.NewUploadLinkService(u)
-	uuSvc := service.NewUploadLinkSessionService(a)
+	userRepo := repository.NewUserRepository(db)
+	sessRepo := repository.NewSessionRepository(db)
+	linkRepo := repository.NewUploadLinkRepository(db)
+	linkSessRepo := repository.NewUploadLinkSessionRepository(db)
+
+	authSvc := service.NewAuthService(userRepo, sessRepo)
+	linkSvc := service.NewUploadLinkService(linkRepo)
+	linkSessSvc := service.NewUploadLinkSessionService(linkSessRepo)
 
 	tmpl := template.Must(template.ParseGlob("templates/*.html"))
 
-	authService := service.NewAuthService(repo, s)
-	auth := middleware.NewSessionValidator(authService)
-	guest := middleware.NewGuestOnly(authService)
-
-	authHandler := handler.NewAuthHandler(svc, tmpl)
-	dashboardHandler := handler.NewDashboardHandler(tmpl)
-	rootHandler := handler.NewRootHandler(svc)
-
-	uploadLinkHandler := handler.NewUploadLinkHandler(uSvc, uuSvc, tmpl)
+	authH := handler.NewAuthHandler(authSvc, tmpl)
+	dashH := handler.NewDashboardHandler(tmpl)
+	rootH := handler.NewRootHandler(authSvc)
+	uploadH := handler.NewUploadLinkHandler(linkSvc, linkSessSvc, tmpl)
 
 	mux := http.NewServeMux()
-
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	mux.Handle("/register", guest.WithoutAuth(http.HandlerFunc(authHandler.Register)))
+	guest := middleware.NewGuestOnly(authSvc)
+	auth := middleware.NewSessionValidator(authSvc)
 
-	mux.Handle("/login", guest.WithoutAuth(http.HandlerFunc(authHandler.Login)))
-
-	mux.Handle("/logout", auth.WithAuth(http.HandlerFunc(authHandler.Logout)))
-
-	mux.Handle("/dashboard", auth.WithAuth(http.HandlerFunc(dashboardHandler.Dashboard)))
-
-	mux.Handle("/links/create", auth.WithAuth(http.HandlerFunc(uploadLinkHandler.CreateUploadLink)))
-	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadLinkHandler.ShowLinks)))
-	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadLinkHandler.VisitUploadLink)))
-
-	mux.HandleFunc("/", rootHandler.Root)
+	mux.Handle("/register", guest.WithoutAuth(http.HandlerFunc(authH.Register)))
+	mux.Handle("/login", guest.WithoutAuth(http.HandlerFunc(authH.Login)))
+	mux.Handle("/logout", auth.WithAuth(http.HandlerFunc(authH.Logout)))
+	mux.Handle("/dashboard", auth.WithAuth(http.HandlerFunc(dashH.Dashboard)))
+	mux.Handle("/links/create", auth.WithAuth(http.HandlerFunc(uploadH.CreateUploadLink)))
+	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadH.ShowLinks)))
+	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadH.VisitUploadLink)))
+	mux.HandleFunc("/", rootH.Root)
 
 	log.Println("listening on :8080")
-	http.ListenAndServe(":8080", mux)
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
