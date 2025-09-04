@@ -28,11 +28,12 @@ func main() {
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
 	linkSessRepo := repository.NewUploadLinkSessionRepository(db)
+	fileRepo := repository.NewPersonalFileRepository(db)
 
 	authSvc := service.NewAuthService(userRepo, sessRepo)
 	linkSvc := service.NewUploadLinkService(linkRepo)
 	linkSessSvc := service.NewUploadLinkSessionService(linkSessRepo)
-	pFileSvc := service.NewPersonalFileService(storage)
+	pFileSvc := service.NewPersonalFileService(storage, fileRepo)
 
 	dirs := []string{
 		"templates/*.html",

@@ -4,10 +4,7 @@ import (
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 type PersonalFileUploadHandler struct {
@@ -23,7 +20,7 @@ func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage,
 func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	user := ExtractUserOrRedirect(w, r)
 
-	files, err := p.svc.GetUserFiles(user.Username)
+	files, err := p.svc.GetUserFiles(r.Context(), user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -44,54 +41,13 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 	}
 
 	user := ExtractUserOrRedirect(w, r)
-	err = p.sto.CreateBaseDirIfAbsent(user.Username)
-	if err != nil {
-		http.Error(w, "failed to create base dir: "+err.Error(), http.StatusInternalServerError)
+
+	if err := p.svc.StoreFiles(r.Context(), user, reader); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	baseUserPath := p.sto.GetBaseDirForUser(user.Username)
-
-	for {
-		part, err := reader.NextPart()
-		if err == io.EOF {
-			break // all parts processed
-		}
-		if err != nil {
-			http.Error(w, "error reading upload: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if part.FileName() == "" {
-			continue
-		}
-
-		safeName := filepath.Base(part.FileName())
-		dstPath := filepath.Join(baseUserPath, safeName)
-
-		dst, err := os.Create(dstPath)
-		if err != nil {
-			http.Error(w, "cannot create file: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		_, err = io.Copy(dst, part)
-		if err != nil {
-			http.Error(w, "error saving file: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err = part.Close(); err != nil {
-			http.Error(w, "cannot close file: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if err = dst.Close(); err != nil {
-			http.Error(w, "cannot close file: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-	}
-	files, err := p.svc.GetUserFiles(user.Username)
+	files, err := p.svc.GetUserFiles(r.Context(), user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
