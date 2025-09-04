@@ -56,11 +56,31 @@
     </form>
 
     <div id="file-list" class="mt-6">
-        <ul class="space-y-1 text-sm text-gray-700 break-all">
-            {{ range .Files }}
-            <li>{{ . }}</li>
+        <table class="w-full text-sm text-gray-700">
+            <colgroup>
+                <col style="width: 80%;">
+                <col style="width: 10%;">
+                <col style="width: 10%;">
+            </colgroup>
+
+            <thead>
+            <tr class="border-b">
+                <th class="text-left py-2 font-semibold">Name</th>
+                <th class="text-left py-2 font-semibold">Uploaded</th>
+                <th class="text-right py-2 font-semibold">Size</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {{ range .Rows }}
+            <tr>
+                <td class="py-2 text-left">{{ .Name }}</td>
+                <td class="py-2 text-left">{{ .CreatedAt }}</td>
+                <td class="py-2 text-right">{{ .Size }}</td>
+            </tr>
             {{ end }}
-        </ul>
+            </tbody>
+        </table>
     </div>
 
     <div class="mt-10 text-center">
