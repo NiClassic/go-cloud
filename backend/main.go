@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/NiClassic/go-cloud/internal/handler"
 	"github.com/NiClassic/go-cloud/internal/middleware"
@@ -18,23 +20,52 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Fatalf("Error closing sqlite connection: %v", err)
+		}
+	}(db)
+
+	storage := storage.NewStorage("/home/nico/Code/go/go-cloud/data")
 
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
 	linkSessRepo := repository.NewUploadLinkSessionRepository(db)
+	fileRepo := repository.NewPersonalFileRepository(db)
 
 	authSvc := service.NewAuthService(userRepo, sessRepo)
 	linkSvc := service.NewUploadLinkService(linkRepo)
 	linkSessSvc := service.NewUploadLinkSessionService(linkSessRepo)
+	pFileSvc := service.NewPersonalFileService(storage, fileRepo)
 
-	tmpl := template.Must(template.ParseGlob("templates/*.html"))
+	dirs := []string{
+		"templates/*.html",
+		"templates/*/*.html",
+	}
+
+	files := []string{}
+	for _, dir := range dirs {
+		ff, err := filepath.Glob(dir)
+		if err != nil {
+			panic(err)
+		}
+		files = append(files, ff...)
+	}
+
+	tmpl, err := template.ParseFiles(files...)
+	if err != nil {
+		panic(err)
+	}
+
+	//tmpl := template.Must(template.ParseGlob("templates/**/*.html"))
 
 	authH := handler.NewAuthHandler(authSvc, tmpl)
 	dashH := handler.NewDashboardHandler(tmpl)
 	rootH := handler.NewRootHandler(authSvc)
 	uploadH := handler.NewUploadLinkHandler(linkSvc, linkSessSvc, tmpl)
+	pFileH := handler.NewPersonalFileUploadHandler(tmpl, storage, pFileSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -49,6 +80,9 @@ func main() {
 	mux.Handle("/links/create", auth.WithAuth(http.HandlerFunc(uploadH.CreateUploadLink)))
 	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadH.ShowLinks)))
 	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadH.VisitUploadLink)))
+	mux.Handle("/files", auth.WithAuth(http.HandlerFunc(pFileH.ListFiles)))
+	mux.Handle("/files/", auth.WithAuth(http.HandlerFunc(pFileH.DownloadFile)))
+	mux.Handle("/files/upload", auth.WithAuth(http.HandlerFunc(pFileH.UploadFiles)))
 	mux.HandleFunc("/", rootH.Root)
 
 	log.Println("listening on :8080")

@@ -1,0 +1,10 @@
+CREATE TABLE files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    size BIGINT NOT NULL,
+    mime_type TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    location TEXT NOT NULL,
+    hash TEXT NOT NULL
+);
