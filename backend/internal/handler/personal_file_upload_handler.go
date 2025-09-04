@@ -122,7 +122,13 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 		return
 	}
 
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			http.Error(w, "cannot close file", http.StatusInternalServerError)
+			return
+		}
+	}(f)
 	w.Header().Set("Content-Disposition",
 		fmt.Sprintf("attachment; filename=%q", file.Name))
 	w.Header().Set("Content-Type", file.MimeType)

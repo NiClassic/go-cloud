@@ -20,7 +20,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Fatalf("Error closing sqlite connection: %v", err)
+		}
+	}(db)
 
 	storage := storage.NewStorage("/home/nico/Code/go/go-cloud/data")
 
