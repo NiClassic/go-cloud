@@ -43,6 +43,10 @@ func extractMetadata(part *multipart.Part) (size int64, mimeType string, err err
 	return
 }
 
+func (p *PersonalFileService) GetFileById(ctx context.Context, id int64) (*model.File, error) {
+	return p.repo.GetById(ctx, id)
+}
+
 func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, reader *multipart.Reader) error {
 	err := p.sto.CreateBaseDirIfAbsent(user.Username)
 	if err != nil {

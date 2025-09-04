@@ -76,6 +76,7 @@ func main() {
 	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadH.ShowLinks)))
 	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadH.VisitUploadLink)))
 	mux.Handle("/files", auth.WithAuth(http.HandlerFunc(pFileH.ListFiles)))
+	mux.Handle("/files/", auth.WithAuth(http.HandlerFunc(pFileH.DownloadFile)))
 	mux.Handle("/files/upload", auth.WithAuth(http.HandlerFunc(pFileH.UploadFiles)))
 	mux.HandleFunc("/", rootH.Root)
 

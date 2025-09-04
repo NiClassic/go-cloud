@@ -40,3 +40,12 @@ func (p *PersonalFileRepository) GetByUser(ctx context.Context, id int64) ([]*mo
 	}
 	return files, rows.Err()
 }
+
+func (p *PersonalFileRepository) GetById(ctx context.Context, id int64) (*model.File, error) {
+	const q = `SELECT * FROM files WHERE id = ?`
+	var f model.File
+	if err := p.db.QueryRowContext(ctx, q, id).Scan(&f.ID, &f.UserID, &f.Name, &f.Size, &f.MimeType, &f.CreatedAt, &f.Location, &f.Hash); err != nil {
+		return nil, err
+	}
+	return &f, nil
+}
