@@ -6,7 +6,7 @@
     </h3>
 
     <form hx-post="/files/upload"
-          hx-target="#file-list"
+          hx-target="#file-rows"
           hx-swap="innerHTML"
           enctype="multipart/form-data"
           class="space-y-4">
@@ -62,7 +62,6 @@
                 <col style="width: 10%;">
                 <col style="width: 10%;">
             </colgroup>
-
             <thead>
             <tr class="border-b">
                 <th class="text-left py-2 font-semibold">Name</th>
@@ -70,15 +69,8 @@
                 <th class="text-right py-2 font-semibold">Size</th>
             </tr>
             </thead>
-
-            <tbody>
-            {{ range .Rows }}
-            <tr>
-                <td class="py-2 text-left">{{ .Name }}</td>
-                <td class="py-2 text-left">{{ .CreatedAt }}</td>
-                <td class="py-2 text-right">{{ .Size }}</td>
-            </tr>
-            {{ end }}
+            <tbody id="file-rows">
+            {{ template "file_rows" . }}
             </tbody>
         </table>
     </div>

@@ -74,7 +74,7 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	Render(w, p.tmpl, "file_list.html", "Your Files", map[string]any{"Rows": toRows(files)})
+	Render(w, p.tmpl, "file_rows", "Your Files", map[string]any{"Rows": toRows(files)})
 }
 
 func humanReadableSize(b int64) string {
