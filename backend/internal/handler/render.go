@@ -5,8 +5,9 @@ import (
 	"net/http"
 )
 
-func Render(w http.ResponseWriter, tmpl *template.Template, name, title string, data map[string]any) {
+func Render(w http.ResponseWriter, tmpl *template.Template, isAuthenticated bool, name, title string, data map[string]any) {
 	data["Title"] = title
+	data["IsAuthenticated"] = isAuthenticated
 	if err := tmpl.ExecuteTemplate(w, name, data); err != nil {
 		http.Error(w, "template execution error", http.StatusInternalServerError)
 	}

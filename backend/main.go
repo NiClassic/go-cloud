@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("sqlite", "/data/storage.db")
+	db, err := sql.Open("sqlite", "../data/storage.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func main() {
 		}
 	}(db)
 
-	storage := storage.NewStorage("/data")
+	storage := storage.NewStorage("/home/nico/Code/go/go-cloud/data")
 
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)

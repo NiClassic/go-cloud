@@ -19,7 +19,7 @@ func NewAuthHandler(svc *service.AuthService, tmpl *template.Template) *AuthHand
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		Render(w, h.tmpl, "login.html", "Login | Go-Cloud", map[string]any{})
+		Render(w, h.tmpl, false, "login.html", "Login", map[string]any{})
 	case http.MethodPost:
 		username := r.FormValue("username")
 		password := r.FormValue("password")
@@ -52,7 +52,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		Render(w, h.tmpl, "register.html", "Register | Go-Cloud", map[string]any{})
+		Render(w, h.tmpl, false, "register.html", "Register", map[string]any{})
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form", http.StatusBadRequest)

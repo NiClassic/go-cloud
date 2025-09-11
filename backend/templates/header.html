@@ -1,7 +1,44 @@
-<html>
+<!DOCTYPE html>
+<html lang="en" class="h-full">
 <head>
-    <title>{{ .Title }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} | Go-Cloud</title>
     <link rel="stylesheet" href="/static/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 flex justify-center items-center min-h-screen font-sans">
+<body class="bg-gray-100 text-gray-800 flex flex-col h-full font-sans antialiased">
+
+<header class="bg-white shadow-md p-4 flex items-center justify-between z-10">
+    <a href="/" class="text-2xl font-bold text-blue-500 hover:text-blue-700 transition">CloudApp</a>
+
+    {{ if .IsAuthenticated }}
+    <nav class="flex-grow flex justify-center">
+        <ul class="flex space-x-8">
+            <li><a href="/" class="text-gray-700 hover:text-blue-500 font-medium py-2 px-3 rounded-md transition">Home</a></li>
+            <li><a href="/files" class="text-gray-700 hover:text-blue-500 font-medium py-2 px-3 rounded-md transition">Personal Files</a></li>
+            <li><a href="/shares" class="text-gray-700 hover:text-blue-500 font-medium py-2 px-3 rounded-md transition">Shares</a></li>
+        </ul>
+    </nav>
+
+    <div class="relative ml-auto">
+        <button class="cursor-pointer flex items-center space-x-2 text-gray-700 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md py-1 px-2 transition">
+            <span class="font-medium hidden sm:inline">Profile</span>
+        </button>
+    </div>
+    <div class="relative ml-auto">
+        <form action="/logout" method="post" class="inline m-0 p-0">
+            <button type="submit" class="cursor-pointer flex items-center space-x-2 text-red-800 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md py-1 px-2 transition">
+                <span class="font-medium hidden sm:inline">Logout</span>
+            </button>
+        </form>
+    </div>
+    {{ else }}
+    <div class="ml-auto flex items-center space-x-4">
+        <a href="/login" class="text-blue-500 hover:text-blue-700 font-medium py-2 px-3 rounded-md transition">Login</a>
+        <a href="/register" class="bg-blue-500 hover:bg-blue-500 text-white py-2 px-4 rounded-md transition">Register</a>
+    </div>
+    {{ end }}
+</header>
+
+<main class="flex-grow flex justify-center items-center p-4">
