@@ -21,4 +21,7 @@ services:
       "-database", "sqlite3:///data/storage.db",
       "up"
     ]
-    user: "root"
+    user: "${USERID:-0}:${GROUPID:-0}"
+
+volumes:
+  app_data:
