@@ -1,8 +1,27 @@
 services:
-  backend:
-    build: ./backend
+  app:
+    build: .
     ports:
       - "8080:8080"
     volumes:
-      - ./uploads:/uploads
-      - ./data:/data
+      - ./appdata:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    build:
+      context: .
+      dockerfile: migrate.Dockerfile
+    volumes:
+      - ./backend/db/migrations:/migrations
+      - ./appdata:/data
+    command: [
+      "-path", "/migrations",
+      "-database", "sqlite3:///data/storage.db",
+      "up"
+    ]
+    user: "${USERID:-0}:${GROUPID:-0}"
+
+volumes:
+  app_data:
