@@ -1,8 +1,8 @@
 DB_URL = sqlite://data/storage.db
-MIGRATIONS_DIR = ./backend/db/migrations
+MIGRATIONS_DIR = db/migrations
 TAILWIND = tailwindcss-linux-x64
-TAILWIND_INPUT = backend/static/input.css
-TAILWIND_OUTPUT = backend/static/output.css
+TAILWIND_INPUT =static/input.css
+TAILWIND_OUTPUT = static/output.css
 
 .PHONY: all
 all: migrate-up tailwind
