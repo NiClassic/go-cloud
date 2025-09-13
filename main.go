@@ -14,9 +14,12 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("sqlite", "../data/storage.db")
+	db, err := sql.Open("sqlite", "data/storage.db")
 	if err != nil {
 		log.Fatal(err)
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatalf("could not connect to database: %v", err)
 	}
 	defer func(db *sql.DB) {
 		err := db.Close()
