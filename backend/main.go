@@ -2,17 +2,15 @@ package main
 
 import (
 	"database/sql"
-	"github.com/NiClassic/go-cloud/internal/storage"
-	"html/template"
-	"log"
-	"net/http"
-	"path/filepath"
-
+	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/handler"
 	"github.com/NiClassic/go-cloud/internal/middleware"
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/service"
+	"github.com/NiClassic/go-cloud/internal/storage"
+	"log"
 	_ "modernc.org/sqlite"
+	"net/http"
 )
 
 func main() {
@@ -40,26 +38,10 @@ func main() {
 	linkSessSvc := service.NewUploadLinkSessionService(linkSessRepo)
 	pFileSvc := service.NewPersonalFileService(storage, fileRepo)
 
-	dirs := []string{
-		"templates/*.html",
-		"templates/*/*.html",
-	}
-
-	files := []string{}
-	for _, dir := range dirs {
-		ff, err := filepath.Glob(dir)
-		if err != nil {
-			panic(err)
-		}
-		files = append(files, ff...)
-	}
-
-	tmpl, err := template.ParseFiles(files...)
+	tmpl, err := handler.ParseTemplates()
 	if err != nil {
 		panic(err)
 	}
-
-	//tmpl := template.Must(template.ParseGlob("templates/**/*.html"))
 
 	authH := handler.NewAuthHandler(authSvc, tmpl)
 	dashH := handler.NewDashboardHandler(tmpl)
@@ -85,6 +67,8 @@ func main() {
 	mux.Handle("/files/upload", auth.WithAuth(http.HandlerFunc(pFileH.UploadFiles)))
 	mux.HandleFunc("/", rootH.Root)
 
-	log.Println("listening on :8080")
+	config.Init()
+
+	log.Printf("listening on :8080 (Debug Mode=%v)\n", config.Debug)
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
