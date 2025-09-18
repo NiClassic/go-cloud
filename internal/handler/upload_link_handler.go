@@ -33,6 +33,7 @@ func (h *UploadLinkHandler) ShowLinks(w http.ResponseWriter, r *http.Request) {
 	}
 	Render(w, h.tmpl, true, LinkSharePage, "Upload Links", map[string]any{
 		"Links": links,
+		"Now":   time.Now(),
 	})
 }
 
