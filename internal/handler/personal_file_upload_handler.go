@@ -52,7 +52,7 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	Render(w, p.tmpl, true, "personal_files.html", "Your Files", map[string]any{"Rows": toRows(files)})
+	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{"Rows": toRows(files)})
 }
 
 func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +80,7 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	Render(w, p.tmpl, true, "file_rows", "Your Files", map[string]any{"Rows": toRows(files)})
+	Render(w, p.tmpl, true, FileRows, "Your Files", map[string]any{"Rows": toRows(files)})
 }
 
 func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
