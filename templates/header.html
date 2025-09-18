@@ -15,8 +15,8 @@
     {{ if .IsAuthenticated }}
     <nav class="flex-grow flex justify-center">
         <ul class="flex space-x-8">
-            <li><a href="/files" class="text-gray-700 hover:text-brand-500 font-medium py-2 px-3 transition">Files</a></li>
-            <li><a href="/shares" class="text-gray-700 hover:text-brand-500 font-medium py-2 px-3 transition">Shares</a></li>
+            <li><a href="/files" class="{{ if eq .Template 3 }} text-brand-500 {{ else }} text-gray-700 hover:text-brand-500 {{ end }} font-medium py-2 px-3 transition">Files</a></li>
+            <li><a href="/links" class="{{ if eq .Template 5 }} text-brand-500 {{ else }} text-gray-700 hover:text-brand-500 {{ end }} font-medium py-2 px-3 transition">Shares</a></li>
         </ul>
     </nav>
 

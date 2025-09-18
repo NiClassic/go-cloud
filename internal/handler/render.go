@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/NiClassic/go-cloud/config"
 	"html/template"
+	"log"
 	"net/http"
 	"path/filepath"
 )
@@ -77,6 +78,7 @@ func Render(w http.ResponseWriter, tmpl *template.Template, isAuthenticated bool
 		tmpl = tmplNew
 	}
 	if err := tmpl.ExecuteTemplate(w, pageToTemplateName(template), data); err != nil {
+		log.Printf("Error rendering template: %v", err)
 		http.Error(w, "template execution error", http.StatusInternalServerError)
 	}
 }
