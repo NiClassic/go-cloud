@@ -47,7 +47,6 @@ func main() {
 	}
 
 	authH := handler.NewAuthHandler(authSvc, tmpl)
-	dashH := handler.NewDashboardHandler(tmpl)
 	rootH := handler.NewRootHandler(authSvc)
 	uploadH := handler.NewUploadLinkHandler(linkSvc, linkSessSvc, tmpl)
 	pFileH := handler.NewPersonalFileUploadHandler(tmpl, storage, pFileSvc)
@@ -61,7 +60,6 @@ func main() {
 	mux.Handle("/register", guest.WithoutAuth(http.HandlerFunc(authH.Register)))
 	mux.Handle("/login", guest.WithoutAuth(http.HandlerFunc(authH.Login)))
 	mux.Handle("/logout", auth.WithAuth(http.HandlerFunc(authH.Logout)))
-	mux.Handle("/dashboard", auth.WithAuth(http.HandlerFunc(dashH.Dashboard)))
 	mux.Handle("/links/create", auth.WithAuth(http.HandlerFunc(uploadH.CreateUploadLink)))
 	mux.Handle("/links", auth.WithAuth(http.HandlerFunc(uploadH.ShowLinks)))
 	mux.Handle("/links/", auth.WithAuth(http.HandlerFunc(uploadH.VisitUploadLink)))
