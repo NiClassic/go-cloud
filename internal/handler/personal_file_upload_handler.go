@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/service"
@@ -25,7 +26,7 @@ func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage,
 
 type fileRow struct {
 	Name      string
-	CreatedAt string
+	CreatedAt time.Time
 	Size      string
 	Id        int64
 }
@@ -35,7 +36,7 @@ func toRows(files []*model.File) []fileRow {
 	for i, f := range files {
 		rows[i] = fileRow{
 			Name:      f.Name,
-			CreatedAt: f.CreatedAt.Format("02 Jan 06 15:04"),
+			CreatedAt: f.CreatedAt,
 			Size:      humanReadableSize(f.Size),
 			Id:        f.ID,
 		}
