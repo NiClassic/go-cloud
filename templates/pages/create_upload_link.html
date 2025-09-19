@@ -1,19 +1,19 @@
 {{ template "header.html" . }}
 
-<div class="bg-white p-8 rounded-xl shadow-md max-w-md w-full">
-    <h2 class="mb-6 text-center text-xl font-semibold text-gray-700">Create upload link</h2>
+<div class="bg-white p-8 rounded-xl border-gray-200 border-2 max-w-md w-full">
+    <h2 class="mb-6 text-center text-xl font-semibold text-gray-800">Create upload link</h2>
     <form hx-post="/links/create" hx-targets="this" hx-swap="outerHTML">
-        <label for="name" class="block mb-2 font-bold">Name</label>
+        <label for="name" class="block mb-2 font-bold text-gray-600">Name</label>
         <input
                 type="text"
                 id="name"
                 name="name"
                 placeholder="Enter the name of the link"
                 required
-                class="w-full p-3 mb-4 border border-gray-300 rounded-md text-base box-border"
+                class="focus:ring-0 w-full p-3 mb-4 border border-gray-200 rounded-md text-base box-border"
         />
 
-        <label for="password" class="block mb-2 font-bold">Password</label>
+        <label for="password" class="block mb-2 font-bold text-gray-600">Password</label>
         <input
                 type="password"
                 id="password"
@@ -23,7 +23,7 @@
                 class="w-full p-3 mb-4 border border-gray-300 rounded-md text-base box-border"
         />
 
-        <label for="expiry" class="block mb-2 font-bold">Expiry Timestamp</label>
+        <label for="expiry" class="block mb-2 font-bold text-gray-600">Expiry Timestamp</label>
         <input
                 type="datetime-local"
                 id="expiry"
@@ -31,12 +31,12 @@
                 value="{{.DefaultExpiresAt}}"
                 placeholder="Enter the expiry date of the link"
                 required
-                class="w-full p-3 mb-4 border border-gray-300 rounded-md text-base box-border"
+                class="w-full p-3 mb-4 border border-gray-200 rounded-md text-base box-border"
         />
 
         <button
                 type="submit"
-                class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white text-base rounded-md transition"
+                class="w-full py-3 mt- 4 bg-brand-500 hover:bg-brand-700 text-white text-base rounded-md transition"
         >
             Create upload link
         </button>
