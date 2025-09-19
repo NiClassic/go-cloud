@@ -43,19 +43,19 @@ func ParseTemplates() (*template.Template, error) {
 func pageToTemplateName(template Template) string {
 	switch template {
 	case LoginPage:
-		return "login.html"
+		return "login_user.html"
 	case RegisterPage:
-		return "register.html"
+		return "register_user.html"
 	case DashboardPage:
-		return "dashboard.html"
+		return "view_dashboard.html"
 	case PersonalFilePage:
-		return "personal_files.html"
+		return "view_personal_files.html"
 	case FileRows:
 		return "file_rows"
 	case LinkSharePage:
 		return "view_links.html"
 	case LinkSharePasswordPage:
-		return "password_upload_link.html"
+		return "view_password_upload_link.html"
 	case LinkShareDetailPage:
 		return "view_upload_link.html"
 	case LinkShareCreationPage:
