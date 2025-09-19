@@ -1,0 +1,116 @@
+{{ template "header.html" . }}
+
+<div class="w-full h-full px-6 mt-8">
+    <div class="flex justify-items-start items-center mb-8 gap-4">
+        <div id="dropdown-container" class="relative">
+            <button id="new-button" type="button" class="inline-flex items-center justify-center px-4 py-2 bg-brand-500 hover:bg-brand-700 text-white font-semibold rounded-md transition">
+                <i class="material-icons">add</i>
+                New
+            </button>
+
+            <div id="dropdown-menu"
+                 class="hidden absolute top-full mt-2 w-48 bg-white rounded-md shadow-md ring-2 ring-gray-200 ring-opacity-5 z-20 left-0">
+                <div class="py-1" role="menu">
+                    <button id="upload-file-button" type="button"
+                            class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="material-icons w-6 mr-2">upload_file</i>
+                        <span>Upload File</span>
+                    </button>
+                    <button id="new-folder-button" type="button"
+                            class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="material-icons w-6 mr-2">create_new_folder</i>
+                        <span>New folder</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <form hx-post="/files/upload"
+          hx-target="#file-rows"
+          hx-swap="innerHTML"
+          enctype="multipart/form-data"
+          class="hidden">
+            <input id="files"
+                   name="files"
+                   type="file"
+                   multiple
+                   class="sr-only"
+            >
+
+        <ul id="selected-files" class="mt-2 text-sm text-gray-600 space-y-1"></ul>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const form  = document.querySelector('form[hx-post="/files/upload"]');
+                const input = document.getElementById('files');
+                const list  = document.getElementById('selected-files');
+
+                const newButton = document.getElementById("new-button")
+                const dropdownMenu = document.getElementById("dropdown-menu")
+                const uploadFileButton = document.getElementById("upload-file-button")
+
+                newButton.addEventListener('click', (event) => {
+                    event.stopPropagation()
+                    dropdownMenu.classList.toggle('hidden')
+                })
+
+                window.addEventListener('click', () => {
+                    if (!dropdownMenu.classList.contains('hidden')) {
+                        dropdownMenu.classList.add('hidden')
+                    }
+                })
+
+                uploadFileButton.addEventListener('click', () => {
+                    dropdownMenu.classList.add('hidden')
+                    input.click()
+                })
+
+
+                // show selected files
+                input.addEventListener('change', () => {
+                    list.innerHTML = '';
+                    [...input.files].forEach(f => {
+                        const li = document.createElement('li');
+                        li.textContent = f.name;
+                        list.appendChild(li);
+                    });
+
+                    if(input.files.length > 0) {
+                        htmx.trigger(form, 'submit')
+                    }
+                });
+
+                // clear after successful upload
+                form.addEventListener('htmx:afterRequest', (evt) => {
+                    if (evt.detail.successful) {
+                        list.innerHTML = '';
+                        input.value   = '';
+                    }
+                });
+            });
+        </script>
+    </form>
+
+    <div id="file-list" class="mt-6">
+        <table class="w-full text-sm text-gray-700">
+            <colgroup>
+                <col style="width: 80%;">
+                <col style="width: 10%;">
+                <col style="width: 10%;">
+            </colgroup>
+            <thead>
+            <tr class="border-b">
+                <th class="text-left py-2 font-semibold">Name</th>
+                <th class="text-left py-2 font-semibold">Uploaded</th>
+                <th class="text-right py-2 font-semibold">Size</th>
+            </tr>
+            </thead>
+            <tbody id="file-rows">
+            {{ template "file_rows" . }}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{ template "footer.html" . }}

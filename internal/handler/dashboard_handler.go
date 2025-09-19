@@ -19,7 +19,7 @@ func (h *DashboardHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	Render(w, h.tmpl, "dashboard.html", "Dashboard | Go-Cloud", map[string]any{
+	Render(w, h.tmpl, true, DashboardPage, "Dashboard", map[string]any{
 		"Username": user.Username,
 	})
 }

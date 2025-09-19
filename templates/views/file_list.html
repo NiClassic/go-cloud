@@ -1,0 +1,21 @@
+{{ define "file_rows" }}
+    {{ range .Rows }}
+    <tr class="cursor-pointer hover:bg-gray-300" onclick="location.href='/files/{{ .Id }}/download'">
+        <td class="py-3 text-left flex flex-row items-center">
+            <i class="material-icons w-6 mr-2">description</i>
+            {{ .Name }}
+            </a>
+        </td>
+        {{- $today := $.Now.Format "2006-01-02" -}}
+        {{- $date   := .CreatedAt.Format "2006-01-02" -}}
+        <td class="py-3 text-left">
+            {{- if eq $today $date -}}
+            {{- .CreatedAt.Format "15:04" -}}
+            {{- else -}}
+            {{- .CreatedAt.Format "02.01.2006" -}}
+            {{- end -}}
+        </td>
+        <td class="py-3 text-right">{{ .Size }}</td>
+    </tr>
+    {{ end }}
+{{ end }}

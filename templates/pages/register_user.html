@@ -1,0 +1,40 @@
+{{ template "header.html" . }}
+
+<div class="bg-white p-8 rounded-xl border-gray-200 border-2 max-w-md w-full">
+    <h2 class="mb-6 text-center text-xl font-semibold text-gray-800">Register</h2>
+    <form action="/register" method="post">
+        <label for="username" class="block mb-2 font-bold text-gray-600">Username</label>
+        <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Enter your username"
+                required
+                class="w-full p-3 mb-4 border border-gray-200 rounded-md text-base box-border"
+        />
+
+        <label for="password" class="block mb-2 font-bold text-gray-600">Password</label>
+        <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                required
+                class="w-full p-3 mb-4 border border-gray-200 rounded-md text-base box-border"
+        />
+
+        <button
+                type="submit"
+                class="w-full py-3 mt- 4 bg-brand-500 hover:bg-brand-700 text-white text-base rounded-md transition"
+        >
+            Register
+        </button>
+    </form>
+
+    <p class="text-center mt-4 text-gray-700">
+        Already have an account?
+        <a href="/login" class="text-brand-500 hover:underline">Login here</a>
+    </p>
+</div>
+
+{{ template "footer.html" . }}

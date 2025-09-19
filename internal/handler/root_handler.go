@@ -23,5 +23,5 @@ func (h *RootHandler) Root(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "/files", http.StatusSeeOther)
 }

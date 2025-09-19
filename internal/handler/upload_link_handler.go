@@ -2,12 +2,13 @@ package handler
 
 import (
 	"fmt"
-	"github.com/NiClassic/go-cloud/internal/model"
-	"github.com/NiClassic/go-cloud/internal/service"
 	"html/template"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/NiClassic/go-cloud/internal/model"
+	"github.com/NiClassic/go-cloud/internal/service"
 )
 
 type UploadLinkHandler struct {
@@ -30,8 +31,9 @@ func (h *UploadLinkHandler) ShowLinks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	Render(w, h.tmpl, "view_links.html", "Upload Links | Go-Cloud", map[string]any{
+	Render(w, h.tmpl, true, LinkSharePage, "Upload Links", map[string]any{
 		"Links": links,
+		"Now":   time.Now(),
 	})
 }
 
@@ -53,7 +55,7 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 	switch r.Method {
 	case http.MethodGet:
 		if len(parts) == 2 && parts[1] == "auth" {
-			Render(w, h.tmpl, "password_upload_link.html", "Unlock Link | Go-Cloud", map[string]any{
+			Render(w, h.tmpl, true, LinkSharePasswordPage, "Unlock Link", map[string]any{
 				"LinkName":  link.Name,
 				"LinkToken": link.LinkToken,
 			})
@@ -62,7 +64,7 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 		cookie, err := r.Cookie(link.LinkToken)
 		if err == nil {
 			if ok, _ := h.sessionService.ValidateSession(r.Context(), cookie.Value); ok {
-				Render(w, h.tmpl, "view_upload_link.html", "View Link | Go-Cloud", map[string]any{
+				Render(w, h.tmpl, true, LinkShareDetailPage, "View Link", map[string]any{
 					"LinkName": link.Name,
 				})
 				return
@@ -108,7 +110,7 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 	switch r.Method {
 	case http.MethodGet:
 		exp := time.Now().Add(time.Hour).Format("2006-01-02T15:04")
-		Render(w, h.tmpl, "create_upload_link.html", "Create Link | Go-Cloud", map[string]any{
+		Render(w, h.tmpl, true, LinkShareCreationPage, "Create Link", map[string]any{
 			"DefaultExpiresAt": exp,
 		})
 	case http.MethodPost:
@@ -130,7 +132,7 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "failed to create upload link", http.StatusInternalServerError)
 			return
 		}
-		Render(w, h.tmpl, "created_upload_link.html", "Created Link | Go-Cloud", map[string]any{
+		Render(w, h.tmpl, true, LinkShareCreationPage, "Created Link", map[string]any{
 			"LinkName":  link.Name,
 			"LinkValue": link.LinkToken,
 		})

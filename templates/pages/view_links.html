@@ -1,0 +1,51 @@
+{{ template "header.html" . }}
+
+<div class="w-full h-full px-6 mt-8">
+    <div class="flex justify-start items-center mb-8">
+        <a  href="/links/create"
+            class="inline-flex items-center px-4 py-2 bg-brand-500 hover:bg-brand-700 text-white font-semibold rounded-md transition">
+            <i class="material-icons">link</i>
+            <span>New Link</span>
+        </a>
+    </div>
+
+    <!-- table -->
+    <div class="mt-6">
+        <table class="w-full text-sm text-gray-700">
+            <colgroup>
+                <col style="width: 70%;">
+                <col style="width: 15%;">
+                <col style="width: 15%;">
+            </colgroup>
+            <thead>
+            <tr class="border-b">
+                <th class="text-left py-2 font-semibold">Name</th>
+                <th class="text-left py-2 font-semibold">Created</th>
+                <th class="text-right py-2 font-semibold">Expires</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range .Links }}
+            {{- $today := $.Now.Format "2006-01-02" -}}
+            {{- $date := .CreatedAt.Format "2006-01-02" -}}
+            <tr class="cursor-pointer hover:bg-gray-200"
+                onclick="location.href='/links/{{ .LinkToken }}'">
+                <td class="py-3 text-left">{{ .Name }} <span class="text-gray-400">({{ .LinkToken }})</span></td>
+                <td class="py-3 text-left">
+                    {{- if eq $today $date -}}
+                    {{ .CreatedAt.Format "15:04" }}
+                    {{- else -}}
+                    {{ .CreatedAt.Format "02.01.06" }}
+                    {{- end -}}
+                </td>
+                <td class="py-3 text-right">
+                    {{ .ExpiresAt.Format "02.01.06 15:04" }}
+                </td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{ template "footer.html" . }}

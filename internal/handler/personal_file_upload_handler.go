@@ -2,14 +2,16 @@ package handler
 
 import (
 	"fmt"
-	"github.com/NiClassic/go-cloud/internal/model"
-	"github.com/NiClassic/go-cloud/internal/service"
-	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/NiClassic/go-cloud/internal/model"
+	"github.com/NiClassic/go-cloud/internal/service"
+	"github.com/NiClassic/go-cloud/internal/storage"
 )
 
 type PersonalFileUploadHandler struct {
@@ -24,7 +26,7 @@ func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage,
 
 type fileRow struct {
 	Name      string
-	CreatedAt string
+	CreatedAt time.Time
 	Size      string
 	Id        int64
 }
@@ -34,7 +36,7 @@ func toRows(files []*model.File) []fileRow {
 	for i, f := range files {
 		rows[i] = fileRow{
 			Name:      f.Name,
-			CreatedAt: f.CreatedAt.Format("02 Jan 06 15:04"),
+			CreatedAt: f.CreatedAt,
 			Size:      humanReadableSize(f.Size),
 			Id:        f.ID,
 		}
@@ -51,7 +53,10 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	Render(w, p.tmpl, "personal_files.html", "Your Files | Go-Cloud", map[string]any{"Rows": toRows(files)})
+	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
+		"Rows": toRows(files),
+		"Now":  time.Now(),
+	})
 }
 
 func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +84,10 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	Render(w, p.tmpl, "file_rows", "Your Files", map[string]any{"Rows": toRows(files)})
+	Render(w, p.tmpl, true, FileRows, "Your Files", map[string]any{
+		"Rows": toRows(files),
+		"Now":  time.Now(),
+	})
 }
 
 func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
