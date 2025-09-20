@@ -3,3 +3,4 @@ uploads/
 notes.md
 .idea/
 node_modules/
+.env

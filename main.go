@@ -9,15 +9,22 @@ import (
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
+	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 	"net/http"
+	"os"
 )
 
 func main() {
 	config.Init()
 
 	logger.Init(config.Debug)
-	db, err := sql.Open("sqlite", "data/storage.db")
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		logger.Fatal("could not load .env file: %v", err)
+	}
+	db, err := sql.Open("sqlite", os.Getenv("DB_FILE"))
 	if err != nil {
 		logger.Fatal("could not open database: %v", err)
 	}
@@ -32,7 +39,7 @@ func main() {
 		}
 	}(db)
 
-	storage := storage.NewStorage("/home/nico/Code/go/go-cloud/data")
+	storage := storage.NewStorage(os.Getenv("DATA_ROOT"))
 
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)
