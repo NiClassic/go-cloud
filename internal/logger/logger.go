@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -75,7 +76,10 @@ func writer() {
 		case FatalLevel:
 			prefix = "FATAL"
 		}
-		fmt.Fprintf(output, "%s [%s]: %s\n", entry.time.Format("02.01.2006 15:04:05"), prefix, fmt.Sprintf(entry.format, entry.args...))
+		_, err := fmt.Fprintf(output, "%s [%s]: %s\n", entry.time.Format("02.01.2006 15:04:05"), prefix, fmt.Sprintf(entry.format, entry.args...))
+		if err != nil {
+			log.Fatal("could not write to output:", err)
+		}
 	}
 }
 
