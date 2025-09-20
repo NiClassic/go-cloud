@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"github.com/NiClassic/go-cloud/internal/handler"
+	"github.com/NiClassic/go-cloud/internal/logger"
 	"net/http"
 
 	"github.com/NiClassic/go-cloud/internal/service"
@@ -23,12 +24,14 @@ func (s *SessionValidator) WithAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(cookieName)
 		if err != nil {
+			logger.Error("could not find cookie: %v", err)
 			http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 			return
 		}
 
 		user, err := s.svc.GetUserBySessionToken(r.Context(), cookie.Value)
 		if err != nil {
+			logger.Error("could not get user: %v", err)
 			http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 			return
 		}

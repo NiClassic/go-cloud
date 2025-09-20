@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/NiClassic/go-cloud/internal/logger"
 	"net/http"
 
 	"github.com/NiClassic/go-cloud/internal/service"
@@ -13,6 +14,7 @@ func NewRootHandler(svc *service.AuthService) *RootHandler {
 }
 
 func (h *RootHandler) Root(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

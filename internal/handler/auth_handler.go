@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/NiClassic/go-cloud/internal/logger"
 	"html/template"
 	"net/http"
 
@@ -17,6 +18,7 @@ func NewAuthHandler(svc *service.AuthService, tmpl *template.Template) *AuthHand
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	switch r.Method {
 	case http.MethodGet:
 		Render(w, h.tmpl, false, LoginPage, "Login", map[string]any{})
@@ -27,12 +29,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		user, err := h.svc.Authenticate(r.Context(), username, password)
 		if err != nil {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			logger.Error("invalid credentials: %v", err)
 			return
 		}
 
 		token, err := h.svc.RegisterSession(r.Context(), user)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			logger.Error("internal server error: %v", err)
 			return
 		}
 
@@ -46,33 +50,40 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/files", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		logger.InvalidMethod(r)
 	}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	switch r.Method {
 	case http.MethodGet:
 		Render(w, h.tmpl, false, RegisterPage, "Register", map[string]any{})
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form", http.StatusBadRequest)
+			logger.Error("invalid form: %v", err)
 			return
 		}
 
 		_, err := h.svc.Register(r.Context(), r.Form.Get("username"), r.Form.Get("password"))
 		if err != nil {
 			http.Error(w, "could not create user", http.StatusInternalServerError)
+			logger.Error("could not create user: %v", err)
 			return
 		}
 		http.Redirect(w, r, "/files", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		logger.InvalidMethod(r)
 	}
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		logger.InvalidMethod(r)
 		return
 	}
 
