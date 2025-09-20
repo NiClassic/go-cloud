@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/NiClassic/go-cloud/internal/logger"
 	"html/template"
 	"net/http"
 	"os"
@@ -45,11 +46,13 @@ func toRows(files []*model.File) []fileRow {
 }
 
 func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	user := ExtractUserOrRedirect(w, r)
 
 	files, err := p.svc.GetUserFiles(r.Context(), user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("could not get user files: %v", err)
 		return
 	}
 
@@ -60,14 +63,17 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 }
 
 func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		logger.InvalidMethod(r)
 		return
 	}
 
 	reader, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, "invalid multipart data: "+err.Error(), http.StatusBadRequest)
+		logger.Error("invalid multipart data: %v", err)
 		return
 	}
 
@@ -75,12 +81,14 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 
 	if err := p.svc.StoreFiles(r.Context(), user, reader); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("could not store files: %v", err)
 		return
 	}
 
 	files, err := p.svc.GetUserFiles(r.Context(), user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("could not get user files: %v", err)
 		return
 	}
 
@@ -91,8 +99,10 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 }
 
 func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
+	logger.Request(r)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		logger.InvalidMethod(r)
 		return
 	}
 
@@ -100,33 +110,35 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 	parts := strings.SplitN(suffix, "/", 2)
 	if len(parts) != 2 || parts[1] != "download" {
 		http.NotFound(w, r)
+		logger.Error("invalid file path: %s", r.URL.Path)
 		return
 	}
 	fileIdStr := parts[0]
 	fileId, err := strconv.ParseInt(fileIdStr, 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
+		logger.Error("could not parse file id: %s", r.URL.Path)
 		return
 	}
 
 	file, err := p.svc.GetFileById(r.Context(), fileId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("could not get file by id: %v", err)
 		return
 	}
 
 	user := ExtractUserOrRedirect(w, r)
-	if user == nil {
-		return
-	}
 	if file.UserID != user.ID {
 		http.NotFound(w, r)
+		logger.Error("user tried to access file that does not belong to him: %v", r.URL.Path)
 		return
 	}
 
 	f, err := os.Open(file.Location)
 	if err != nil {
 		http.Error(w, "cannot open file", http.StatusInternalServerError)
+		logger.Error("could not open file: %v", err)
 		return
 	}
 
@@ -134,6 +146,7 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 		err := f.Close()
 		if err != nil {
 			http.Error(w, "cannot close file", http.StatusInternalServerError)
+			logger.Error("could not close file: %v", err)
 			return
 		}
 	}(f)
@@ -143,7 +156,6 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
 	w.Header().Set("Cache-Control", "no-store")
 	http.ServeContent(w, r, file.Name, file.CreatedAt, f)
-
 }
 
 func humanReadableSize(b int64) string {

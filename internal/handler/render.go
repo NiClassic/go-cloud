@@ -2,8 +2,8 @@ package handler
 
 import (
 	"github.com/NiClassic/go-cloud/config"
+	"github.com/NiClassic/go-cloud/internal/logger"
 	"html/template"
-	"log"
 	"net/http"
 	"path/filepath"
 )
@@ -32,7 +32,7 @@ func ParseTemplates() (*template.Template, error) {
 	for _, dir := range dirs {
 		ff, err := filepath.Glob(dir)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		files = append(files, ff...)
 	}
@@ -73,12 +73,13 @@ func Render(w http.ResponseWriter, tmpl *template.Template, isAuthenticated bool
 		tmplNew, err := ParseTemplates()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("could not parse templates: %v", err)
 			return
 		}
 		tmpl = tmplNew
 	}
 	if err := tmpl.ExecuteTemplate(w, pageToTemplateName(template), data); err != nil {
-		log.Printf("Error rendering template: %v", err)
+		logger.Error("could not render template: %v", err)
 		http.Error(w, "template execution error", http.StatusInternalServerError)
 	}
 }

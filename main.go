@@ -4,27 +4,31 @@ import (
 	"database/sql"
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/handler"
+	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/middleware"
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
-	"log"
 	_ "modernc.org/sqlite"
 	"net/http"
 )
 
 func main() {
+	config.Init()
+
+	logger.Init(config.Debug)
 	db, err := sql.Open("sqlite", "data/storage.db")
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("could not open database: %v", err)
 	}
 	if err = db.Ping(); err != nil {
-		log.Fatalf("could not connect to database: %v", err)
+		logger.Fatal("could not ping database: %v", err)
 	}
+	logger.Info("successfully connected to database")
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			log.Fatalf("Error closing sqlite connection: %v", err)
+			logger.Fatal("could not close database: %v", err)
 		}
 	}(db)
 
@@ -43,7 +47,7 @@ func main() {
 
 	tmpl, err := handler.ParseTemplates()
 	if err != nil {
-		panic(err)
+		logger.Fatal("could not parse templates: %v", err)
 	}
 
 	authH := handler.NewAuthHandler(authSvc, tmpl)
@@ -68,8 +72,8 @@ func main() {
 	mux.Handle("/files/upload", auth.WithAuth(http.HandlerFunc(pFileH.UploadFiles)))
 	mux.HandleFunc("/", rootH.Root)
 
-	config.Init()
-
-	log.Printf("listening on :8080 (Debug Mode=%v)\n", config.Debug)
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	logger.Info("listening on :8080 (Debug Mode=%v)", config.Debug)
+	if err = http.ListenAndServe(":8080", mux); err != nil {
+		logger.Fatal("could not run server: %v", err)
+	}
 }
