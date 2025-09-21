@@ -22,7 +22,7 @@ func main() {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		logger.Fatal("could not load .env file: %v", err)
+		logger.Info("did not find .env file, falling back to shell environment")
 	}
 
 	dbConn, err := db.New()

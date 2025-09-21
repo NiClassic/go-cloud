@@ -24,8 +24,6 @@ COPY --chown=clouduser:clouduser --from=builder /app/templates ./templates
 
 COPY --chown=clouduser:clouduser --from=builder /app/static ./static
 
-COPY --chown=clouduser:clouduser --from=builder /app/.env .env
-
 EXPOSE 8080
 
 CMD [ "./server" ]
