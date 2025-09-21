@@ -115,6 +115,7 @@ func InvalidMethod(r *http.Request) {
 	Error("method not allowed for %s: %v", r.URL.String(), r.Method)
 }
 func Fatal(format string, args ...any) {
-	logf(ErrorLevel, format, args...)
+	logf(FatalLevel, format, args...)
+	Close()
 	os.Exit(1)
 }
