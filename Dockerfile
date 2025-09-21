@@ -2,31 +2,29 @@ FROM golang:1.25 AS builder
 
 WORKDIR /app
 
-COPY ./backend/go.mod ./backend/go.sum ./
+COPY go.mod go.sum ./
 
 RUN go mod download
 
-COPY ./backend/ ./
+COPY . .
 
-RUN apt-get update && apt-get install -y sqlite3
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o server ./main.go
+FROM debian:bookworm-slim
 
-FROM alpine:latest
+RUN useradd -u 1000 -m clouduser \
+    && mkdir -p /data \
+    && chown -R clouduser:clouduser /data
 
-RUN addgroup -S appuser && adduser -S appuser -G appuser
+COPY --chown=clouduser:clouduser --from=builder /app/db/migrations/ ./db/migrations/
 
-WORKDIR /app
+COPY --chown=clouduser:clouduser --from=builder /app/server .
 
-RUN mkdir -p /data && chown appuser:appuser /data
+COPY --chown=clouduser:clouduser --from=builder /app/templates ./templates
 
-# Copy binary
-COPY --from=builder /app/server .
+COPY --chown=clouduser:clouduser --from=builder /app/static ./static
 
-# Copy html templates
-COPY --from=builder /app/templates ./templates
-# Copy static css
-COPY --from=builder /app/static ./static
+COPY --chown=clouduser:clouduser --from=builder /app/.env .env
 
 EXPOSE 8080
 

@@ -1,27 +1,11 @@
 services:
-  app:
+  go-cloud:
     build: .
+    container_name: go-cloud
     ports:
       - "8080:8080"
+    environment:
+      - DATA_ROOT=/data
+      - DB_FILE=/data/storage.db
     volumes:
-      - ./appdata:/data
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-
-  migrate:
-    build:
-      context: .
-      dockerfile: migrate.Dockerfile
-    volumes:
-      - ./backend/db/migrations:/migrations
-      - ./appdata:/data
-    command: [
-      "-path", "/migrations",
-      "-database", "sqlite3:///data/storage.db",
-      "up"
-    ]
-    user: "${USERID:-0}:${GROUPID:-0}"
-
-volumes:
-  app_data:
+      - ./data:/data
