@@ -5,10 +5,18 @@ A Go cloud storage application with SQLite.
 ## Quick Start
 
 ```bash
-git clone https://github.com/yourname/go-cloud-app.git
-cd go-cloud-app
-USERID=$(id -u) GROUPID=$(id -g) docker compose up --build
+git clone https://github.com/NiClassic/go-cloud.git
+cd go-cloud
+docker compose up --build
 ```
+
+### Available Environment variables in docker-compose.yml
+
+| Variable  | Example Value    | Effect                                      |
+|-----------|------------------|---------------------------------------------|
+| DATA_ROOT | /data            | Root storage path of all the uploaded files |
+| DB_FILE   | /data/storage.db | Path of the SQLite database                 |
+| DEBUG     | true             | Enable debug logs                           |
 
 This will:
 - Run the database migrations
