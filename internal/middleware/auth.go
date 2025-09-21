@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"github.com/NiClassic/go-cloud/internal/handler"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"net/http"
 
@@ -12,6 +11,12 @@ import (
 const (
 	cookieName   = "session_token"
 	redirectPath = "/login"
+)
+
+type ctxKey int
+
+const (
+	UserKey ctxKey = iota
 )
 
 type SessionValidator struct{ svc *service.AuthService }
@@ -36,7 +41,7 @@ func (s *SessionValidator) WithAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), handler.UserKey, user)
+		ctx := context.WithValue(r.Context(), UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
