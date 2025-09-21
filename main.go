@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/handler"
 	"github.com/NiClassic/go-cloud/internal/logger"
@@ -9,6 +10,9 @@ import (
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 	"net/http"
@@ -32,6 +36,18 @@ func main() {
 		logger.Fatal("could not ping database: %v", err)
 	}
 	logger.Info("successfully connected to database")
+
+	driver, err := sqlite.WithInstance(db, &sqlite.Config{})
+	if err != nil {
+		logger.Fatal("could not open database for migrations: %v", err)
+	}
+	m, err := migrate.NewWithDatabaseInstance("file://./db/migrations", "sqlite", driver)
+	if err != nil {
+		logger.Fatal("could not initialize migrations: %v", err)
+	}
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		logger.Fatal("could not run migrations: %v", err)
+	}
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
