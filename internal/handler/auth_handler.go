@@ -9,12 +9,13 @@ import (
 )
 
 type AuthHandler struct {
-	svc  *service.AuthService
-	tmpl *template.Template
+	svc           *service.AuthService
+	tmpl          *template.Template
+	folderService *service.FolderService
 }
 
-func NewAuthHandler(svc *service.AuthService, tmpl *template.Template) *AuthHandler {
-	return &AuthHandler{svc: svc, tmpl: tmpl}
+func NewAuthHandler(svc *service.AuthService, tmpl *template.Template, folderService *service.FolderService) *AuthHandler {
+	return &AuthHandler{svc: svc, tmpl: tmpl, folderService: folderService}
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -66,10 +67,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, err := h.svc.Register(r.Context(), r.Form.Get("username"), r.Form.Get("password"))
+		userID, err := h.svc.Register(r.Context(), r.Form.Get("username"), r.Form.Get("password"))
 		if err != nil {
 			http.Error(w, "could not create user", http.StatusInternalServerError)
 			logger.Error("could not create user: %v", err)
+			return
+		}
+		if _, err = h.folderService.CreateFolder(r.Context(), userID, -1, "/", "/"); err != nil {
+			http.Error(w, "could not create folder", http.StatusInternalServerError)
+			logger.Error("could not create folder: %v", err)
 			return
 		}
 		http.Redirect(w, r, "/files", http.StatusSeeOther)

@@ -11,4 +11,5 @@ type File struct {
 	CreatedAt time.Time `db:"created_at"`
 	Location  string    `db:"location"`
 	Hash      string    `db:"hash"`
+	FolderID  int64     `db:"folder_id"`
 }

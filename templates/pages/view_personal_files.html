@@ -27,7 +27,8 @@
     </div>
 
 
-    <form hx-post="/files/upload"
+<!--    TODO: Needs the current folder-->
+    <form hx-post="/files/upload/"
           hx-target="#file-rows"
           hx-swap="innerHTML"
           enctype="multipart/form-data"
@@ -42,7 +43,7 @@
         <ul id="selected-files" class="mt-2 text-sm text-gray-600 space-y-1"></ul>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const form  = document.querySelector('form[hx-post="/files/upload"]');
+                const form  = document.querySelector('form[hx-post="/files/upload/"]');
                 const input = document.getElementById('files');
                 const list  = document.getElementById('selected-files');
 

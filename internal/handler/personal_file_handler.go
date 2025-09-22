@@ -16,13 +16,14 @@ import (
 )
 
 type PersonalFileUploadHandler struct {
-	tmpl *template.Template
-	sto  *storage.Storage
-	svc  *service.PersonalFileService
+	tmpl          *template.Template
+	sto           *storage.Storage
+	fileService   *service.PersonalFileService
+	folderService *service.FolderService
 }
 
-func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage, svc *service.PersonalFileService) *PersonalFileUploadHandler {
-	return &PersonalFileUploadHandler{tmpl, sto, svc}
+func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage, fileService *service.PersonalFileService, folderService *service.FolderService) *PersonalFileUploadHandler {
+	return &PersonalFileUploadHandler{tmpl, sto, fileService, folderService}
 }
 
 type fileRow struct {
@@ -30,9 +31,10 @@ type fileRow struct {
 	CreatedAt time.Time
 	Size      string
 	Id        int64
+	IsDir     bool
 }
 
-func toRows(files []*model.File) []fileRow {
+func filesToRows(files []*model.File) []fileRow {
 	rows := make([]fileRow, len(files))
 	for i, f := range files {
 		rows[i] = fileRow{
@@ -40,25 +42,55 @@ func toRows(files []*model.File) []fileRow {
 			CreatedAt: f.CreatedAt,
 			Size:      humanReadableSize(f.Size),
 			Id:        f.ID,
+			IsDir:     false,
 		}
 	}
 	return rows
+}
+
+func foldersToRows(files []*model.Folder) []fileRow {
+	rows := make([]fileRow, len(files))
+	for i, f := range files {
+		rows[i] = fileRow{
+			Name:      f.Name,
+			CreatedAt: f.CreatedAt,
+			Size:      humanReadableSize(4096),
+			Id:        f.ID,
+			IsDir:     false,
+		}
+	}
+	return rows
+}
+
+func (p *PersonalFileUploadHandler) RedirectNoTrailingSlash(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/files/", http.StatusSeeOther)
 }
 
 func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	user := ExtractUserOrRedirect(w, r)
 
-	files, err := p.svc.GetUserFiles(r.Context(), user)
+	folderPath := strings.Trim(r.URL.Path, "/files")
+	if folderPath == "" {
+		folderPath = "/"
+	}
+	folder, err := p.folderService.GetByPath(r.Context(), user.ID, folderPath)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logger.Error("could not get user files: %v", err)
+		logger.Error("could not get folder: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	folders, files, err := p.folderService.GetFolderContents(r.Context(), user.ID, folder.ID)
+	if err != nil {
+		logger.Error("could not get folder content: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
-		"Rows": toRows(files),
-		"Now":  time.Now(),
+		"Files":   filesToRows(files),
+		"Folders": foldersToRows(folders),
+		"Now":     time.Now(),
 	})
 }
 
@@ -78,23 +110,35 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 	}
 
 	user := ExtractUserOrRedirect(w, r)
+	folderPath := strings.Trim(r.URL.Path, "/files")
+	folderPath = strings.TrimSuffix(folderPath, "upload")
+	if folderPath == "" {
+		folderPath = "/"
+	}
+	folder, err := p.folderService.GetByPath(r.Context(), user.ID, folderPath)
+	if err != nil {
+		logger.Error("could not get folder: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 
-	if err := p.svc.StoreFiles(r.Context(), user, reader); err != nil {
+	if err := p.fileService.StoreFiles(r.Context(), user, reader, folder.ID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logger.Error("could not store files: %v", err)
 		return
 	}
 
-	files, err := p.svc.GetUserFiles(r.Context(), user)
+	folders, files, err := p.folderService.GetFolderContents(r.Context(), user.ID, folder.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logger.Error("could not get user files: %v", err)
+		logger.Error("could not get folder content: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	Render(w, p.tmpl, true, FileRows, "Your Files", map[string]any{
-		"Rows": toRows(files),
-		"Now":  time.Now(),
+	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
+		"Files":   filesToRows(files),
+		"Folders": foldersToRows(folders),
+		"Now":     time.Now(),
 	})
 }
 
@@ -106,22 +150,16 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 		return
 	}
 
-	suffix := strings.TrimPrefix(r.URL.Path, "/files/")
-	parts := strings.SplitN(suffix, "/", 2)
-	if len(parts) != 2 || parts[1] != "download" {
-		http.NotFound(w, r)
-		logger.Error("invalid file path: %s", r.URL.Path)
-		return
-	}
-	fileIdStr := parts[0]
-	fileId, err := strconv.ParseInt(fileIdStr, 10, 64)
+	suffix := strings.TrimPrefix(r.URL.Path, "/download/")
+
+	fileId, err := strconv.ParseInt(suffix, 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		logger.Error("could not parse file id: %s", r.URL.Path)
 		return
 	}
 
-	file, err := p.svc.GetFileById(r.Context(), fileId)
+	file, err := p.fileService.GetFileById(r.Context(), fileId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logger.Error("could not get file by id: %v", err)

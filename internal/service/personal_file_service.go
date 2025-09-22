@@ -47,7 +47,7 @@ func (p *PersonalFileService) GetFileById(ctx context.Context, id int64) (*model
 	return p.repo.GetById(ctx, id)
 }
 
-func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, reader *multipart.Reader) error {
+func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, reader *multipart.Reader, folderID int64) error {
 	err := p.sto.CreateBaseDirIfAbsent(user.Username)
 	if err != nil {
 		return err
@@ -86,16 +86,28 @@ func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, 
 
 		written, err := io.Copy(dst, tee)
 		if err != nil {
+			err := dst.Close()
+			if err != nil {
+				return err
+			}
 			return err
 		}
 
 		hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-		if _, err = p.repo.Insert(ctx, safeName, mimeType, dstPath, hash, user.ID, written); err != nil {
+		if _, err = p.repo.Insert(ctx, safeName, mimeType, dstPath, hash, user.ID, written, folderID); err != nil {
+			err := dst.Close()
+			if err != nil {
+				return err
+			}
 			return err
 		}
 
 		if err = part.Close(); err != nil {
+			err := dst.Close()
+			if err != nil {
+				return err
+			}
 			return err
 		}
 
@@ -104,4 +116,21 @@ func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, 
 		}
 	}
 	return nil
+}
+
+func (p *PersonalFileService) DeleteFile(ctx context.Context, user *model.User, fileID int64) error {
+	file, err := p.repo.GetById(ctx, fileID)
+	if err != nil {
+		return err
+	}
+
+	if file.UserID != user.ID {
+		return fmt.Errorf("unauthorized")
+	}
+
+	if err := os.Remove(file.Location); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return p.repo.Delete(ctx, fileID)
 }
