@@ -134,10 +134,7 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "failed to create upload link", http.StatusInternalServerError)
 			return
 		}
-		Render(w, h.tmpl, true, LinkShareCreationPage, "Created Link", map[string]any{
-			"LinkName":  link.Name,
-			"LinkValue": link.LinkToken,
-		})
+		http.Redirect(w, r, "/links/"+link.LinkToken, http.StatusSeeOther)
 	default:
 		logger.InvalidMethod(r)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
