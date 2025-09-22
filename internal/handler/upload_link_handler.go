@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/NiClassic/go-cloud/internal/logger"
+	"github.com/NiClassic/go-cloud/internal/timezone"
 	"html/template"
 	"net/http"
 	"strings"
@@ -35,7 +36,7 @@ func (h *UploadLinkHandler) ShowLinks(w http.ResponseWriter, r *http.Request) {
 	}
 	Render(w, h.tmpl, true, LinkSharePage, "Upload Links", map[string]any{
 		"Links": links,
-		"Now":   time.Now(),
+		"Now":   timezone.TZ.GetUTCNow(),
 	})
 }
 
@@ -108,7 +109,7 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 	logger.Request(r)
 	switch r.Method {
 	case http.MethodGet:
-		exp := time.Now().Add(time.Hour).Format("2006-01-02T15:04")
+		exp := timezone.TZ.GetUTCNow().Add(time.Hour)
 		Render(w, h.tmpl, true, LinkShareCreationPage, "Create Link", map[string]any{
 			"DefaultExpiresAt": exp,
 		})
@@ -118,10 +119,16 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "invalid form", http.StatusBadRequest)
 			return
 		}
-		exp, err := time.Parse("2006-01-02T15:04", r.Form.Get("expiry"))
+		expiryStr := r.Form.Get("expiry")
+		exp, err := timezone.TZ.ParseDatetimeLocal(expiryStr)
 		if err != nil {
 			logger.Error("invalid date format: %v", err)
 			http.Error(w, "Invalid date format", http.StatusBadRequest)
+			return
+		}
+		if exp.Before(timezone.TZ.GetUTCNow()) {
+			logger.Error("expiry time must be in the future")
+			http.Error(w, "Expiry time must be in the future", http.StatusBadRequest)
 			return
 		}
 		link, err := h.linkService.CreateUploadLink(r.Context(),

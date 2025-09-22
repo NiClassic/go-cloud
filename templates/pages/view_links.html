@@ -26,20 +26,17 @@
             </thead>
             <tbody>
             {{ range .Links }}
-            {{- $today := $.Now.Format "2006-01-02" -}}
-            {{- $date := .CreatedAt.Format "2006-01-02" -}}
             <tr class="cursor-pointer hover:bg-gray-200"
                 onclick="location.href='/links/{{ .LinkToken }}'">
-                <td class="py-3 text-left">{{ .Name }} <span class="text-gray-400">({{ .LinkToken }})</span></td>
                 <td class="py-3 text-left">
-                    {{- if eq $today $date -}}
-                    {{ .CreatedAt.Format "15:04" }}
-                    {{- else -}}
-                    {{ .CreatedAt.Format "02.01.06" }}
-                    {{- end -}}
+                    {{ .Name }}
+                    <span class="text-gray-400">({{ .LinkToken }})</span>
+                </td>
+                <td class="py-3 text-left">
+                    {{ formatSmart .CreatedAt }}
                 </td>
                 <td class="py-3 text-right">
-                    {{ .ExpiresAt.Format "02.01.06 15:04" }}
+                    {{ formatFull .ExpiresAt }}
                 </td>
             </tr>
             {{ end }}

@@ -17,6 +17,7 @@ docker compose up --build
 | DATA_ROOT | /data            | Root storage path of all the uploaded files |
 | DB_FILE   | /data/storage.db | Path of the SQLite database                 |
 | DEBUG     | true             | Enable debug logs                           |
+| TZ        | Europe/Berlin    | Set the local timezone for date formatting  |
 
 This will:
 - Run the database migrations

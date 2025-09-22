@@ -6,14 +6,8 @@
             {{ .Name }}
             </a>
         </td>
-        {{- $today := $.Now.Format "2006-01-02" -}}
-        {{- $date   := .CreatedAt.Format "2006-01-02" -}}
         <td class="py-3 text-left">
-            {{- if eq $today $date -}}
-            {{- .CreatedAt.Format "15:04" -}}
-            {{- else -}}
-            {{- .CreatedAt.Format "02.01.2006" -}}
-            {{- end -}}
+            {{ formatSmart .CreatedAt }}
         </td>
         <td class="py-3 text-right">{{ .Size }}</td>
     </tr>

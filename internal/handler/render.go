@@ -37,7 +37,8 @@ func ParseTemplates() (*template.Template, error) {
 		files = append(files, ff...)
 	}
 
-	return template.ParseFiles(files...)
+	tmpl := template.New("").Funcs(GetTemplateFunctions())
+	return tmpl.ParseFiles(files...)
 }
 
 func pageToTemplateName(template Template) string {

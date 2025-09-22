@@ -8,5 +8,6 @@ services:
       - DATA_ROOT=/data
       - DB_FILE=/data/storage.db
       - DEBUG=true
+      - TZ=Europe/Berlin
     volumes:
       - ./data:/data

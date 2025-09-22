@@ -8,6 +8,7 @@ import (
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
+	"github.com/NiClassic/go-cloud/internal/timezone"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
@@ -23,6 +24,16 @@ func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		logger.Info("did not find .env file, falling back to shell environment")
+	}
+
+	timezoneName := os.Getenv("TZ")
+	if timezoneName == "" {
+		timezoneName = "UTC"
+		logger.Info("did not find TZ environment variable, using UTC")
+	}
+
+	if err := timezone.Init(timezoneName); err != nil {
+		logger.Fatal("could not initialize timezone '%s': %v", timezoneName, err)
 	}
 
 	dbConn, err := db.New()
@@ -51,6 +62,7 @@ func main() {
 
 	mux := handler.New(services, st, tmpl)
 
+	logger.Info("timezone is %s", timezoneName)
 	logger.Info("listening on :8080 (Debug Mode=%v)", config.Debug)
 	if err = http.ListenAndServe(":8080", mux); err != nil {
 		logger.Fatal("could not run server: %v", err)
