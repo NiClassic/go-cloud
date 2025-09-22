@@ -12,16 +12,16 @@ import (
 )
 
 type UploadLinkHandler struct {
-	linkService    *service.UploadLinkService
-	sessionService *service.UploadLinkSessionService
-	tmpl           *template.Template
+	linkService       *service.UploadLinkService
+	linkUnlockService *service.LinkUnlockService
+	tmpl              *template.Template
 }
 
-func NewUploadLinkHandler(ls *service.UploadLinkService, ss *service.UploadLinkSessionService, tmpl *template.Template) *UploadLinkHandler {
+func NewUploadLinkHandler(ls *service.UploadLinkService, lu *service.LinkUnlockService, tmpl *template.Template) *UploadLinkHandler {
 	return &UploadLinkHandler{
-		linkService:    ls,
-		sessionService: ss,
-		tmpl:           tmpl,
+		linkService:       ls,
+		linkUnlockService: lu,
+		tmpl:              tmpl,
 	}
 }
 
@@ -56,6 +56,7 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 		http.Redirect(w, r, "/links/create", http.StatusSeeOther)
 		return
 	}
+	user := ExtractUserOrRedirect(w, r)
 
 	switch r.Method {
 	case http.MethodGet:
@@ -66,16 +67,15 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 			})
 			return
 		}
-		cookie, err := r.Cookie(link.LinkToken)
-		if err == nil {
-			if ok, _ := h.sessionService.ValidateSession(r.Context(), cookie.Value); ok {
-				Render(w, h.tmpl, true, LinkShareDetailPage, "View Link", map[string]any{
-					"LinkName": link.Name,
-				})
-				return
-			}
+		unlocked, err := h.linkUnlockService.HasUnlocked(r.Context(), user.ID, link.ID)
+		if err != nil || !unlocked {
+			http.Redirect(w, r, fmt.Sprintf("/links/%s/auth", link.LinkToken), http.StatusSeeOther)
+			logger.Error("could not visit upload link: %v", err)
+			return
 		}
-		http.Redirect(w, r, fmt.Sprintf("/links/%s/auth", link.LinkToken), http.StatusSeeOther)
+		Render(w, h.tmpl, true, LinkShareDetailPage, "View Link", map[string]any{
+			"LinkName": link.Name,
+		})
 
 	case http.MethodPost:
 		if len(parts) != 2 || parts[1] != "auth" {
@@ -90,20 +90,13 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 			http.Redirect(w, r, "/links/create", http.StatusSeeOther)
 			return
 		}
-		user := ExtractUserOrRedirect(w, r)
-		session, err := h.sessionService.RegisterSession(r.Context(), link, user)
+		err = h.linkUnlockService.UnlockLink(r.Context(), user.ID, link.ID, link.ExpiresAt)
 		if err != nil {
-			logger.Error("could not register session: %v", err)
+			logger.Error("could not unlock link: %v", err)
 			http.Redirect(w, r, "/links/create", http.StatusSeeOther)
 			return
 		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     link.LinkToken,
-			Value:    session,
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-		})
+
 		http.Redirect(w, r, "/links/"+link.LinkToken, http.StatusSeeOther)
 	default:
 		logger.InvalidMethod(r)
@@ -141,10 +134,14 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "failed to create upload link", http.StatusInternalServerError)
 			return
 		}
-		Render(w, h.tmpl, true, LinkShareCreationPage, "Created Link", map[string]any{
-			"LinkName":  link.Name,
-			"LinkValue": link.LinkToken,
-		})
+		user := ExtractUserOrRedirect(w, r)
+		err = h.linkUnlockService.UnlockLink(r.Context(), user.ID, link.ID, exp)
+		if err != nil {
+			logger.Error("could not unlock link for creator: %v", err)
+			http.Error(w, "failed to create upload link", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/links/"+link.LinkToken, http.StatusSeeOther)
 	default:
 		logger.InvalidMethod(r)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS upload_link_sessions;

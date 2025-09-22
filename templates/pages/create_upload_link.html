@@ -2,7 +2,7 @@
 
 <div class="bg-white p-8 rounded-xl border-gray-200 border-2 max-w-md w-full">
     <h2 class="mb-6 text-center text-xl font-semibold text-gray-800">Create upload link</h2>
-    <form hx-post="/links/create" hx-targets="this" hx-swap="outerHTML">
+    <form action="/links/create" method="post">
         <label for="name" class="block mb-2 font-bold text-gray-600">Name</label>
         <input
                 type="text"
