@@ -11,7 +11,7 @@ import (
 func New(services *service.Services, st *storage.Storage, tmpl *template.Template) *http.ServeMux {
 	authH := NewAuthHandler(services.Auth, tmpl)
 	rootH := NewRootHandler(services.Auth)
-	uploadH := NewUploadLinkHandler(services.UploadLink, services.LinkSession, tmpl)
+	uploadH := NewUploadLinkHandler(services.UploadLink, services.LinkUnlock, tmpl)
 	pFileH := NewPersonalFileUploadHandler(tmpl, st, services.PFile)
 
 	mux := http.NewServeMux()

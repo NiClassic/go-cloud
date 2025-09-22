@@ -7,10 +7,10 @@ import (
 )
 
 type Services struct {
-	Auth        *AuthService
-	UploadLink  *UploadLinkService
-	LinkSession *UploadLinkSessionService
-	PFile       *PersonalFileService
+	Auth       *AuthService
+	UploadLink *UploadLinkService
+	LinkUnlock *LinkUnlockService
+	PFile      *PersonalFileService
 }
 
 // InitServices wires all services and repositories together. It is the main
@@ -19,18 +19,18 @@ func InitServices(db *sql.DB, st *storage.Storage) *Services {
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
-	linkSessRepo := repository.NewUploadLinkSessionRepository(db)
+	linkUnlockRepo := repository.NewLinkUnlockRepository(db)
 	fileRepo := repository.NewPersonalFileRepository(db)
 
 	authSvc := NewAuthService(userRepo, sessRepo)
 	linkSvc := NewUploadLinkService(linkRepo)
-	linkSessSvc := NewUploadLinkSessionService(linkSessRepo)
+	linkUnlockSvc := NewLinkUnlockService(linkUnlockRepo)
 	pFileSvc := NewPersonalFileService(st, fileRepo)
 
 	return &Services{
-		Auth:        authSvc,
-		UploadLink:  linkSvc,
-		LinkSession: linkSessSvc,
-		PFile:       pFileSvc,
+		Auth:       authSvc,
+		UploadLink: linkSvc,
+		LinkUnlock: linkUnlockSvc,
+		PFile:      pFileSvc,
 	}
 }
