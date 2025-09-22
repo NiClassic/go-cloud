@@ -134,6 +134,13 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "failed to create upload link", http.StatusInternalServerError)
 			return
 		}
+		user := ExtractUserOrRedirect(w, r)
+		err = h.linkUnlockService.UnlockLink(r.Context(), user.ID, link.ID, exp)
+		if err != nil {
+			logger.Error("could not unlock link for creator: %v", err)
+			http.Error(w, "failed to create upload link", http.StatusInternalServerError)
+			return
+		}
 		http.Redirect(w, r, "/links/"+link.LinkToken, http.StatusSeeOther)
 	default:
 		logger.InvalidMethod(r)
