@@ -13,7 +13,7 @@ func New(services *service.Services, st *storage.Storage, tmpl *template.Templat
 	rootH := NewRootHandler(services.Auth)
 	uploadH := NewUploadLinkHandler(services.UploadLink, services.LinkUnlock, tmpl)
 	pFileH := NewPersonalFileUploadHandler(tmpl, st, services.PFile, services.Folder)
-	//folderH := NewFolderHandler(services.Folder, services.PFile)
+	folderH := NewFolderHandler(services.Folder, services.PFile, tmpl)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -36,6 +36,9 @@ func New(services *service.Services, st *storage.Storage, tmpl *template.Templat
 	mux.Handle("/files/", middleware.Recover(auth.WithAuth(http.HandlerFunc(pFileH.ListFiles))))
 	mux.Handle("/download/", middleware.Recover(auth.WithAuth(http.HandlerFunc(pFileH.DownloadFile))))
 	mux.Handle("/files/upload/", middleware.Recover(auth.WithAuth(http.HandlerFunc(pFileH.UploadFiles))))
+
+	// Folder management routes
+	mux.Handle("/folders/create", middleware.Recover(auth.WithAuth(http.HandlerFunc(folderH.CreateFolder))))
 
 	// Root route
 	mux.Handle("/", middleware.Recover(http.HandlerFunc(rootH.Root)))

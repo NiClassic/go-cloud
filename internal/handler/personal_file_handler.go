@@ -3,18 +3,25 @@ package handler
 import (
 	"fmt"
 	"github.com/NiClassic/go-cloud/internal/logger"
+	"github.com/NiClassic/go-cloud/internal/model"
+	"github.com/NiClassic/go-cloud/internal/service"
+	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/NiClassic/go-cloud/internal/model"
-	"github.com/NiClassic/go-cloud/internal/service"
-	"github.com/NiClassic/go-cloud/internal/storage"
 )
 
+type fileRow struct {
+	Name      string
+	CreatedAt time.Time
+	Size      string
+	Id        int64
+	IsDir     bool
+	Path      string
+}
 type PersonalFileUploadHandler struct {
 	tmpl          *template.Template
 	sto           *storage.Storage
@@ -26,21 +33,13 @@ func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage,
 	return &PersonalFileUploadHandler{tmpl, sto, fileService, folderService}
 }
 
-type fileRow struct {
-	Name      string
-	CreatedAt time.Time
-	Size      string
-	Id        int64
-	IsDir     bool
-}
-
-func filesToRows(files []*model.File) []fileRow {
+func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
 	rows := make([]fileRow, len(files))
 	for i, f := range files {
 		rows[i] = fileRow{
 			Name:      f.Name,
 			CreatedAt: f.CreatedAt,
-			Size:      humanReadableSize(f.Size),
+			Size:      p.humanReadableSize(f.Size),
 			Id:        f.ID,
 			IsDir:     false,
 		}
@@ -48,15 +47,16 @@ func filesToRows(files []*model.File) []fileRow {
 	return rows
 }
 
-func foldersToRows(files []*model.Folder) []fileRow {
-	rows := make([]fileRow, len(files))
-	for i, f := range files {
+func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fileRow {
+	rows := make([]fileRow, len(folders))
+	for i, f := range folders {
 		rows[i] = fileRow{
 			Name:      f.Name,
 			CreatedAt: f.CreatedAt,
-			Size:      humanReadableSize(4096),
+			Size:      "—",
 			Id:        f.ID,
-			IsDir:     false,
+			IsDir:     true,
+			Path:      f.Path,
 		}
 	}
 	return rows
@@ -69,17 +69,23 @@ func (p *PersonalFileUploadHandler) RedirectNoTrailingSlash(w http.ResponseWrite
 func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	user := ExtractUserOrRedirect(w, r)
+	if user == nil {
+		return
+	}
 
-	folderPath := strings.Trim(r.URL.Path, "/files")
+	folderPath := strings.TrimPrefix(r.URL.Path, "/files")
+	folderPath = strings.TrimSuffix(folderPath, "/")
 	if folderPath == "" {
 		folderPath = "/"
 	}
+
 	folder, err := p.folderService.GetByPath(r.Context(), user.ID, folderPath)
 	if err != nil {
 		logger.Error("could not get folder: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Redirect(w, r, "/files/", http.StatusSeeOther)
 		return
 	}
+
 	folders, files, err := p.folderService.GetFolderContents(r.Context(), user.ID, folder.ID)
 	if err != nil {
 		logger.Error("could not get folder content: %v", err)
@@ -88,9 +94,11 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 	}
 
 	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
-		"Files":   filesToRows(files),
-		"Folders": foldersToRows(folders),
-		"Now":     time.Now(),
+		"Files":             p.filesToRows(files),
+		"Folders":           p.foldersToRows(folders),
+		"CurrentFolderID":   folder.ID,
+		"CurrentFolderPath": folder.Path,
+		"CurrentFolderName": folder.Name,
 	})
 }
 
@@ -110,15 +118,20 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 	}
 
 	user := ExtractUserOrRedirect(w, r)
-	folderPath := strings.Trim(r.URL.Path, "/files")
-	folderPath = strings.TrimSuffix(folderPath, "upload")
+	if user == nil {
+		return
+	}
+
+	folderPath := strings.TrimPrefix(r.URL.Path, "/files/upload")
+	folderPath = strings.TrimSuffix(folderPath, "/")
 	if folderPath == "" {
 		folderPath = "/"
 	}
+
 	folder, err := p.folderService.GetByPath(r.Context(), user.ID, folderPath)
 	if err != nil {
 		logger.Error("could not get folder: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "folder not found", http.StatusNotFound)
 		return
 	}
 
@@ -135,10 +148,9 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
-		"Files":   filesToRows(files),
-		"Folders": foldersToRows(folders),
-		"Now":     time.Now(),
+	Render(w, p.tmpl, true, FileRows, "", map[string]any{
+		"Files":   p.filesToRows(files),
+		"Folders": p.foldersToRows(folders),
 	})
 }
 
@@ -151,7 +163,6 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 	}
 
 	suffix := strings.TrimPrefix(r.URL.Path, "/download/")
-
 	fileId, err := strconv.ParseInt(suffix, 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
@@ -167,9 +178,13 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 	}
 
 	user := ExtractUserOrRedirect(w, r)
+	if user == nil {
+		return
+	}
+
 	if file.UserID != user.ID {
 		http.NotFound(w, r)
-		logger.Error("user tried to access file that does not belong to him: %v", r.URL.Path)
+		logger.Error("user tried to access file that does not belong to them: %v", r.URL.Path)
 		return
 	}
 
@@ -179,7 +194,6 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 		logger.Error("could not open file: %v", err)
 		return
 	}
-
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
@@ -188,15 +202,15 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 			return
 		}
 	}(f)
-	w.Header().Set("Content-Disposition",
-		fmt.Sprintf("attachment; filename=%q", file.Name))
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file.Name))
 	w.Header().Set("Content-Type", file.MimeType)
 	w.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
 	w.Header().Set("Cache-Control", "no-store")
 	http.ServeContent(w, r, file.Name, file.CreatedAt, f)
 }
 
-func humanReadableSize(b int64) string {
+func (p *PersonalFileUploadHandler) humanReadableSize(b int64) string {
 	const unit = 1024
 	if b < unit {
 		return fmt.Sprintf("%d B", b)
