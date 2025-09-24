@@ -123,7 +123,7 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 	// Check if this is an HTMX request
 	if r.Header.Get("HX-Request") == "true" {
 		Render(w, h.tmpl, true, FileRows, "", map[string]any{
-			"Folders": foldersToRows(folders),
+			"Folders": foldersToRows(folders, user.Username),
 			"Files":   filesToRows(files),
 		})
 	} else {
@@ -131,7 +131,7 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func foldersToRows(folders []*model.Folder) []fileRow {
+func foldersToRows(folders []*model.Folder, username string) []fileRow {
 	rows := make([]fileRow, len(folders))
 	for i, f := range folders {
 		rows[i] = fileRow{
@@ -140,7 +140,7 @@ func foldersToRows(folders []*model.Folder) []fileRow {
 			Size:      "—",
 			Id:        f.ID,
 			IsDir:     true,
-			Path:      f.Path,
+			Path:      strings.TrimPrefix(strings.Trim(f.Path, "/"), username),
 		}
 	}
 	return rows
