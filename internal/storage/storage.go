@@ -55,7 +55,12 @@ func (s *IOStorage) SaveFile(username string, folderPath, filename string, src i
 	if err != nil {
 		return "", "", 0, err
 	}
-	defer dst.Close()
+	defer func(dst *os.File) {
+		err := dst.Close()
+		if err != nil {
+			return
+		}
+	}(dst)
 
 	hasher := sha256.New()
 	tee := io.TeeReader(src, hasher)

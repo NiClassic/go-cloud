@@ -57,12 +57,20 @@ func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, 
 		}
 
 		if part.FileName() == "" {
-			part.Close()
+			err := part.Close()
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
 		func() {
-			defer part.Close()
+			defer func(part *multipart.Part) {
+				err := part.Close()
+				if err != nil {
+					return
+				}
+			}(part)
 
 			_, mimeType, err := extractMetadata(part)
 			if err != nil {
