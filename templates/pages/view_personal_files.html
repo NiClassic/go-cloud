@@ -44,6 +44,15 @@
         <ul id="selected-files" class="mt-2 text-sm text-gray-600 space-y-1"></ul>
     </form>
 
+    <div id="breadcrumbs" class="flex flex-row items-center">
+        {{ range $idx, $el := .Breadcrumbs }}
+        <a href="/files{{ $el.Path }}" class="{{ if $el.Current }} text-brand-500 {{ else }} text-gray-700 hover:text-gray-900 {{ end }} ">{{ $el.Name }}</a>
+        {{ if ne $idx $.LastBreadcrumbIndex }}
+        <i class="material-icons">chevron_right</i>
+        {{end}}
+        {{end}}
+    </div>
+
     <div id="file-list" class="mt-6">
         <table class="w-full text-sm text-gray-700">
             <colgroup>

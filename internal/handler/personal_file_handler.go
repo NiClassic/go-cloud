@@ -66,6 +66,12 @@ func (p *PersonalFileUploadHandler) RedirectNoTrailingSlash(w http.ResponseWrite
 	http.Redirect(w, r, "/files/", http.StatusSeeOther)
 }
 
+type breadCrumbItem struct {
+	Name    string
+	Path    string
+	Current bool
+}
+
 func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	user := ExtractUserOrRedirect(w, r)
@@ -93,12 +99,40 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	parts := strings.Split(strings.Trim(folder.Path, "/"), "/")
+	var m []breadCrumbItem
+	if len(parts) == 1 && parts[0] == "" {
+		m = []breadCrumbItem{{
+			Name:    "Home",
+			Path:    "/",
+			Current: true,
+		}}
+	} else {
+		m = make([]breadCrumbItem, len(parts)+1)
+		m[0] = breadCrumbItem{
+			Name:    "Home",
+			Path:    "/",
+			Current: false,
+		}
+		cur := "/"
+		for i, p := range parts {
+			cur = cur + p + "/"
+			m[i+1] = breadCrumbItem{
+				Name:    p,
+				Path:    cur,
+				Current: i == len(parts)-1,
+			}
+		}
+	}
+
 	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
-		"Files":             p.filesToRows(files),
-		"Folders":           p.foldersToRows(folders),
-		"CurrentFolderID":   folder.ID,
-		"CurrentFolderPath": folder.Path,
-		"CurrentFolderName": folder.Name,
+		"Files":               p.filesToRows(files),
+		"Folders":             p.foldersToRows(folders),
+		"CurrentFolderID":     folder.ID,
+		"CurrentFolderPath":   folder.Path,
+		"CurrentFolderName":   folder.Name,
+		"Breadcrumbs":         m,
+		"LastBreadcrumbIndex": len(m) - 1,
 	})
 }
 
