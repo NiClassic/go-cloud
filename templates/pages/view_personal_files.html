@@ -26,71 +26,32 @@
         </div>
     </div>
 
+    <input type="hidden" id="current-folder-id" value="{{ .CurrentFolderID }}" />
+    <input type="hidden" id="current-folder-path" value="{{ .CurrentFolderPath }}" />
 
-    <form hx-post="/files/upload"
+    <form hx-post="/files/upload/{{ .CurrentFolderPath }}"
           hx-target="#file-rows"
           hx-swap="innerHTML"
           enctype="multipart/form-data"
           class="hidden">
-            <input id="files"
-                   name="files"
-                   type="file"
-                   multiple
-                   class="sr-only"
-            >
+        <input id="files"
+               name="files"
+               type="file"
+               multiple
+               class="sr-only"
+        >
 
         <ul id="selected-files" class="mt-2 text-sm text-gray-600 space-y-1"></ul>
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const form  = document.querySelector('form[hx-post="/files/upload"]');
-                const input = document.getElementById('files');
-                const list  = document.getElementById('selected-files');
-
-                const newButton = document.getElementById("new-button")
-                const dropdownMenu = document.getElementById("dropdown-menu")
-                const uploadFileButton = document.getElementById("upload-file-button")
-
-                newButton.addEventListener('click', (event) => {
-                    event.stopPropagation()
-                    dropdownMenu.classList.toggle('hidden')
-                })
-
-                window.addEventListener('click', () => {
-                    if (!dropdownMenu.classList.contains('hidden')) {
-                        dropdownMenu.classList.add('hidden')
-                    }
-                })
-
-                uploadFileButton.addEventListener('click', () => {
-                    dropdownMenu.classList.add('hidden')
-                    input.click()
-                })
-
-
-                // show selected files
-                input.addEventListener('change', () => {
-                    list.innerHTML = '';
-                    [...input.files].forEach(f => {
-                        const li = document.createElement('li');
-                        li.textContent = f.name;
-                        list.appendChild(li);
-                    });
-
-                    if(input.files.length > 0) {
-                        htmx.trigger(form, 'submit')
-                    }
-                });
-
-                // clear after successful upload
-                form.addEventListener('htmx:afterRequest', (evt) => {
-                    if (evt.detail.successful) {
-                        list.innerHTML = '';
-                        input.value   = '';
-                    }
-                });
-            });
-        </script>
     </form>
+
+    <div id="breadcrumbs" class="flex flex-row items-center">
+        {{ range $idx, $el := .Breadcrumbs }}
+        <a href="/files{{ $el.Path }}" class="{{ if $el.Current }} text-brand-500 {{ else }} text-gray-700 hover:text-gray-900 {{ end }} ">{{ $el.Name }}</a>
+        {{ if ne $idx $.LastBreadcrumbIndex }}
+        <i class="material-icons">chevron_right</i>
+        {{end}}
+        {{end}}
+    </div>
 
     <div id="file-list" class="mt-6">
         <table class="w-full text-sm text-gray-700">
@@ -112,5 +73,158 @@
         </table>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.querySelector('form[enctype="multipart/form-data"]');
+        const input = document.getElementById('files');
+        const list = document.getElementById('selected-files');
+        const newButton = document.getElementById("new-button");
+        const dropdownMenu = document.getElementById("dropdown-menu");
+        const uploadFileButton = document.getElementById("upload-file-button");
+        const newFolderButton = document.getElementById("new-folder-button");
+        const fileRows = document.getElementById("file-rows");
+        const currentFolderPath = document.getElementById("current-folder-path").value;
+
+        newButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+        });
+
+        window.addEventListener('click', () => {
+            if (!dropdownMenu.classList.contains('hidden')) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        uploadFileButton.addEventListener('click', () => {
+            dropdownMenu.classList.add('hidden');
+            input.click();
+        });
+
+        newFolderButton.addEventListener('click', () => {
+            dropdownMenu.classList.add('hidden');
+            createNewFolderRow();
+        });
+
+        function createNewFolderRow() {
+            // Check if there's already a new folder being created
+            if (document.getElementById('new-folder-row')) {
+                return;
+            }
+
+            const newRow = document.createElement('tr');
+            newRow.id = 'new-folder-row';
+            newRow.className = 'bg-yellow-50';
+            newRow.innerHTML = `
+            <td class="py-3 text-left flex flex-row items-center">
+                <i class="material-icons w-6 mr-2 text-gray-600">folder</i>
+                <input type="text"
+                       id="new-folder-name"
+                       class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                       placeholder="Folder name"
+                       autofocus />
+            </td>
+            <td class="py-3 text-left text-gray-400">—</td>
+            <td class="py-3 text-right text-gray-400">—</td>
+        `;
+
+            fileRows.insertBefore(newRow, fileRows.firstChild);
+
+            const nameInput = document.getElementById('new-folder-name');
+
+            nameInput.focus();
+
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveFolder(nameInput.value);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelFolderCreation();
+                }
+            });
+
+            nameInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (nameInput.value.trim()) {
+                        saveFolder(nameInput.value);
+                    } else {
+                        cancelFolderCreation();
+                    }
+                }, 200);
+            });
+        }
+
+        function saveFolder(folderName) {
+            folderName = folderName.trim();
+
+            if (!folderName) {
+                cancelFolderCreation();
+                return;
+            }
+
+            const newFolderRow = document.getElementById('new-folder-row');
+            if (newFolderRow) {
+                newFolderRow.remove();
+            }
+
+            const params = new URLSearchParams();
+            params.append('name', folderName);
+            params.append('path', currentFolderPath || '/');
+
+            fetch('/folders/create', {
+                method: 'POST',
+                body: params.toString(),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'HX-Request': 'true',
+                    'HX-Trigger': 'new-folder-button',
+                    'HX-Target': '#file-rows'
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error('Failed to create folder');
+                })
+                .then(html => {
+                    fileRows.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error creating folder:', error);
+                    alert('Failed to create folder. Please try again.');
+                });
+        }
+
+        function cancelFolderCreation() {
+            const newFolderRow = document.getElementById('new-folder-row');
+            if (newFolderRow) {
+                newFolderRow.remove();
+            }
+        }
+
+        input.addEventListener('change', () => {
+            list.innerHTML = '';
+            [...input.files].forEach(f => {
+                const li = document.createElement('li');
+                li.textContent = f.name;
+                list.appendChild(li);
+            });
+
+            if(input.files.length > 0) {
+                htmx.trigger(form, 'submit');
+            }
+        });
+
+        form.addEventListener('htmx:afterRequest', (evt) => {
+            if (evt.detail.successful) {
+                list.innerHTML = '';
+                input.value = '';
+            }
+        });
+    });
+</script>
 
 {{ template "footer.html" . }}

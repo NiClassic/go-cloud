@@ -11,20 +11,23 @@ type Services struct {
 	UploadLink *UploadLinkService
 	LinkUnlock *LinkUnlockService
 	PFile      *PersonalFileService
+	Folder     *FolderService
 }
 
 // InitServices wires all services and repositories together. It is the main
 // dependency injection point.
-func InitServices(db *sql.DB, st *storage.Storage) *Services {
+func InitServices(db *sql.DB, st storage.FileManager) *Services {
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
 	linkUnlockRepo := repository.NewLinkUnlockRepository(db)
 	fileRepo := repository.NewPersonalFileRepository(db)
+	folderRepo := repository.NewFolderRepository(db)
 
 	authSvc := NewAuthService(userRepo, sessRepo)
 	linkSvc := NewUploadLinkService(linkRepo)
 	linkUnlockSvc := NewLinkUnlockService(linkUnlockRepo)
+	folderSvc := NewFolderService(folderRepo, fileRepo, st)
 	pFileSvc := NewPersonalFileService(st, fileRepo)
 
 	return &Services{
@@ -32,5 +35,6 @@ func InitServices(db *sql.DB, st *storage.Storage) *Services {
 		UploadLink: linkSvc,
 		LinkUnlock: linkUnlockSvc,
 		PFile:      pFileSvc,
+		Folder:     folderSvc,
 	}
 }

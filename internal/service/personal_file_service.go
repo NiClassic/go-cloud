@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/repository"
@@ -16,11 +15,11 @@ import (
 )
 
 type PersonalFileService struct {
-	sto  *storage.Storage
+	sto  storage.FileManager
 	repo *repository.PersonalFileRepository
 }
 
-func NewPersonalFileService(sto *storage.Storage, repo *repository.PersonalFileRepository) *PersonalFileService {
+func NewPersonalFileService(sto storage.FileManager, repo *repository.PersonalFileRepository) *PersonalFileService {
 	return &PersonalFileService{sto, repo}
 }
 
@@ -47,14 +46,7 @@ func (p *PersonalFileService) GetFileById(ctx context.Context, id int64) (*model
 	return p.repo.GetById(ctx, id)
 }
 
-func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, reader *multipart.Reader) error {
-	err := p.sto.CreateBaseDirIfAbsent(user.Username)
-	if err != nil {
-		return err
-	}
-
-	baseUserPath := p.sto.GetBaseDirForUser(user.Username)
-
+func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, reader *multipart.Reader, folderID int64, folderPath string) error {
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
@@ -65,43 +57,61 @@ func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, 
 		}
 
 		if part.FileName() == "" {
+			err := part.Close()
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
-		_, mimeType, err := extractMetadata(part)
-		if err != nil {
-			return err
-		}
+		func() {
+			defer func(part *multipart.Part) {
+				err := part.Close()
+				if err != nil {
+					return
+				}
+			}(part)
 
-		safeName := filepath.Base(part.FileName())
-		dstPath := filepath.Join(baseUserPath, safeName)
+			_, mimeType, err := extractMetadata(part)
+			if err != nil {
+				return
+			}
 
-		dst, err := os.Create(dstPath)
-		if err != nil {
-			return err
-		}
+			dstPath, hash, size, err := p.sto.SaveFile(user.Username, folderPath, part.FileName(), part)
+			if err != nil {
+				return
+			}
 
-		hasher := sha256.New()
-		tee := io.TeeReader(part, hasher)
-
-		written, err := io.Copy(dst, tee)
-		if err != nil {
-			return err
-		}
-
-		hash := fmt.Sprintf("%x", hasher.Sum(nil))
-
-		if _, err = p.repo.Insert(ctx, safeName, mimeType, dstPath, hash, user.ID, written); err != nil {
-			return err
-		}
-
-		if err = part.Close(); err != nil {
-			return err
-		}
-
-		if err = dst.Close(); err != nil {
-			return err
-		}
+			if _, err := p.repo.Insert(ctx,
+				filepath.Base(part.FileName()),
+				mimeType,
+				dstPath,
+				hash,
+				user.ID,
+				size,
+				folderID,
+			); err != nil {
+				return
+			}
+		}()
 	}
+
 	return nil
+}
+
+func (p *PersonalFileService) DeleteFile(ctx context.Context, user *model.User, fileID int64) error {
+	file, err := p.repo.GetById(ctx, fileID)
+	if err != nil {
+		return err
+	}
+
+	if file.UserID != user.ID {
+		return fmt.Errorf("unauthorized")
+	}
+
+	if err := os.Remove(file.Location); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return p.repo.Delete(ctx, fileID)
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/NiClassic/go-cloud/internal/logger"
+	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
 	"net/http"
 
@@ -9,12 +10,14 @@ import (
 )
 
 type AuthHandler struct {
-	svc  *service.AuthService
-	tmpl *template.Template
+	svc           *service.AuthService
+	tmpl          *template.Template
+	folderService *service.FolderService
+	st            storage.FileManager
 }
 
-func NewAuthHandler(svc *service.AuthService, tmpl *template.Template) *AuthHandler {
-	return &AuthHandler{svc: svc, tmpl: tmpl}
+func NewAuthHandler(svc *service.AuthService, tmpl *template.Template, folderService *service.FolderService, st storage.FileManager) *AuthHandler {
+	return &AuthHandler{svc: svc, tmpl: tmpl, folderService: folderService, st: st}
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -65,13 +68,20 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			logger.Error("invalid form: %v", err)
 			return
 		}
+		username := r.FormValue("username")
 
-		_, err := h.svc.Register(r.Context(), r.Form.Get("username"), r.Form.Get("password"))
+		userID, err := h.svc.Register(r.Context(), username, r.Form.Get("password"))
 		if err != nil {
 			http.Error(w, "could not create user", http.StatusInternalServerError)
 			logger.Error("could not create user: %v", err)
 			return
 		}
+		if _, err = h.folderService.CreateFolder(r.Context(), userID, username, -1, "/", "/"); err != nil {
+			http.Error(w, "could not create folder in db", http.StatusInternalServerError)
+			logger.Error("could not create folder in db: %v", err)
+			return
+		}
+		logger.Info("user created: %v, user folder created", r.Form.Get("username"))
 		http.Redirect(w, r, "/files", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
