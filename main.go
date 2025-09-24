@@ -51,7 +51,7 @@ func main() {
 		}
 	}(dbConn)
 
-	st := storage.NewStorage(os.Getenv("DATA_ROOT"))
+	st := storage.NewIOStorage(os.Getenv("DATA_ROOT"))
 
 	services := service.InitServices(dbConn, st)
 

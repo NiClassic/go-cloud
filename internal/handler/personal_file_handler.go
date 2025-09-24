@@ -24,12 +24,12 @@ type fileRow struct {
 }
 type PersonalFileUploadHandler struct {
 	tmpl          *template.Template
-	sto           *storage.Storage
+	sto           storage.FileManager
 	fileService   *service.PersonalFileService
 	folderService *service.FolderService
 }
 
-func NewPersonalFileUploadHandler(tmpl *template.Template, sto *storage.Storage, fileService *service.PersonalFileService, folderService *service.FolderService) *PersonalFileUploadHandler {
+func NewPersonalFileUploadHandler(tmpl *template.Template, sto storage.FileManager, fileService *service.PersonalFileService, folderService *service.FolderService) *PersonalFileUploadHandler {
 	return &PersonalFileUploadHandler{tmpl, sto, fileService, folderService}
 }
 
@@ -47,7 +47,7 @@ func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
 	return rows
 }
 
-func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fileRow {
+func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder, username string) []fileRow {
 	rows := make([]fileRow, len(folders))
 	for i, f := range folders {
 		rows[i] = fileRow{
@@ -56,7 +56,7 @@ func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fil
 			Size:      "—",
 			Id:        f.ID,
 			IsDir:     true,
-			Path:      f.Path,
+			Path:      strings.TrimPrefix(strings.Trim(f.Path, "/"), username),
 		}
 	}
 	return rows
@@ -85,7 +85,7 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		folderPath = "/"
 	}
 
-	folder, err := p.folderService.GetByPath(r.Context(), user.ID, folderPath)
+	folder, err := p.folderService.GetByPath(r.Context(), user.ID, user.Username, folderPath)
 	if err != nil {
 		logger.Error("could not get folder: %v", err)
 		http.Redirect(w, r, "/files/", http.StatusSeeOther)
@@ -99,7 +99,7 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	parts := strings.Split(strings.Trim(folder.Path, "/"), "/")
+	parts := strings.Split(strings.Trim(strings.TrimPrefix(folder.Path, user.Username), "/"), "/")
 	var m []breadCrumbItem
 	if len(parts) == 1 && parts[0] == "" {
 		m = []breadCrumbItem{{
@@ -127,7 +127,7 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 
 	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
 		"Files":               p.filesToRows(files),
-		"Folders":             p.foldersToRows(folders),
+		"Folders":             p.foldersToRows(folders, user.Username),
 		"CurrentFolderID":     folder.ID,
 		"CurrentFolderPath":   folder.Path,
 		"CurrentFolderName":   folder.Name,
@@ -156,20 +156,21 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	folderPath := strings.TrimPrefix(r.URL.Path, "/files/upload")
+	folderPath := strings.TrimPrefix(r.URL.Path, "/files/upload/")
+	folderPath = strings.TrimPrefix(folderPath, user.Username)
 	folderPath = strings.TrimSuffix(folderPath, "/")
 	if folderPath == "" {
 		folderPath = "/"
 	}
 
-	folder, err := p.folderService.GetByPath(r.Context(), user.ID, folderPath)
+	folder, err := p.folderService.GetByPath(r.Context(), user.ID, user.Username, folderPath)
 	if err != nil {
 		logger.Error("could not get folder: %v", err)
 		http.Error(w, "folder not found", http.StatusNotFound)
 		return
 	}
 
-	if err := p.fileService.StoreFiles(r.Context(), user, reader, folder.ID); err != nil {
+	if err := p.fileService.StoreFiles(r.Context(), user, reader, folder.ID, folderPath); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logger.Error("could not store files: %v", err)
 		return
@@ -184,7 +185,7 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 
 	Render(w, p.tmpl, true, FileRows, "", map[string]any{
 		"Files":   p.filesToRows(files),
-		"Folders": p.foldersToRows(folders),
+		"Folders": p.foldersToRows(folders, user.Username),
 	})
 }
 

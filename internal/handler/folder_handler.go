@@ -62,13 +62,15 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	parentPath = strings.TrimPrefix(parentPath, user.Username)
+	parentPath = strings.TrimSuffix(parentPath, "/")
 	if parentPath == "" {
 		parentPath = "/"
 	}
 
 	var parentID int64 = -1
 	if parentPath != "/" {
-		parentFolder, err := h.folderSvc.GetByPath(r.Context(), user.ID, parentPath)
+		parentFolder, err := h.folderSvc.GetByPath(r.Context(), user.ID, user.Username, parentPath)
 		if err != nil {
 			logger.Error("could not get parent folder '%s': %v", parentPath, err)
 			parentPath = "/"
@@ -78,7 +80,7 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if parentPath == "/" {
-		rootFolder, err := h.folderSvc.GetByPath(r.Context(), user.ID, "/")
+		rootFolder, err := h.folderSvc.GetByPath(r.Context(), user.ID, user.Username, "/")
 		if err != nil {
 			logger.Error("could not get root folder: %v", err)
 			parentID = -1
@@ -94,7 +96,7 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug("Creating folder at path: %s with parent ID: %d", newFolderPath, parentID)
 
-	_, err := h.folderSvc.CreateFolder(r.Context(), user.ID, parentID, folderName, newFolderPath)
+	_, err := h.folderSvc.CreateFolder(r.Context(), user.ID, user.Username, parentID, folderName, newFolderPath)
 	if err != nil {
 		logger.Error("could not create folder: %v", err)
 		http.Error(w, "Failed to create folder", http.StatusInternalServerError)
@@ -103,7 +105,7 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 
 	var displayFolderID int64
 	if parentPath == "/" && parentID == -1 {
-		rootFolder, _ := h.folderSvc.GetByPath(r.Context(), user.ID, "/")
+		rootFolder, _ := h.folderSvc.GetByPath(r.Context(), user.ID, user.Username, "/")
 		if rootFolder != nil {
 			displayFolderID = rootFolder.ID
 		}

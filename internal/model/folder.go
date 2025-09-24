@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Folder struct {
 	ID        int64     `db:"id"`
@@ -10,4 +13,8 @@ type Folder struct {
 	Path      string    `db:"path"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func (f *Folder) PathWithoutUsername(username string) string {
+	return strings.TrimPrefix(f.Path, "/"+username)
 }

@@ -1,6 +1,6 @@
 {{ define "file_rows" }}
 {{ range .Folders }}
-<tr class="cursor-pointer hover:bg-gray-200" onclick="location.href='/files{{ .Path }}'">
+<tr class="cursor-pointer hover:bg-gray-200" onclick="location.href='/files/{{ .Path }}'">
     <td class="py-3 text-left flex flex-row items-center">
         <i class="material-icons w-6 mr-2 text-gray-600">folder</i>
         <span class="font-medium">{{ .Name }}</span>

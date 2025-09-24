@@ -3,8 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/repository"
+	"github.com/NiClassic/go-cloud/internal/storage"
+	"strings"
 )
 
 var (
@@ -18,13 +21,14 @@ var (
 type FolderService struct {
 	folderRepo *repository.FolderRepository
 	fileRepo   *repository.PersonalFileRepository
+	st         storage.FileManager
 }
 
-func NewFolderService(folderRepo *repository.FolderRepository, fileRepo *repository.PersonalFileRepository) *FolderService {
-	return &FolderService{folderRepo, fileRepo}
+func NewFolderService(folderRepo *repository.FolderRepository, fileRepo *repository.PersonalFileRepository, st storage.FileManager) *FolderService {
+	return &FolderService{folderRepo, fileRepo, st}
 }
 
-func (s *FolderService) CreateFolder(ctx context.Context, userID int64, parentID int64, name, path string) (*model.Folder, error) {
+func (s *FolderService) CreateFolder(ctx context.Context, userID int64, username string, parentID int64, name, path string) (*model.Folder, error) {
 	if name == "" {
 		return nil, ErrInvalidFolderName
 	}
@@ -38,12 +42,17 @@ func (s *FolderService) CreateFolder(ctx context.Context, userID int64, parentID
 			return nil, ErrFolderNotFound
 		}
 	}
+	cleaned := strings.Trim(fmt.Sprintf("/%s%s", username, path), "/")
 
-	id, err := s.folderRepo.Insert(ctx, userID, parentID, name, path)
+	id, err := s.folderRepo.Insert(ctx, userID, parentID, name, cleaned)
 	if err != nil {
 		return nil, err
 	}
 
+	_, err = s.st.EnsureDir(username, path)
+	if err != nil {
+		return nil, err
+	}
 	return s.folderRepo.GetByID(ctx, id)
 }
 
@@ -59,8 +68,9 @@ func (s *FolderService) GetById(ctx context.Context, userID, folderID int64) (*m
 	return folder, nil
 }
 
-func (s *FolderService) GetByPath(ctx context.Context, userID int64, path string) (*model.Folder, error) {
-	folder, err := s.folderRepo.GetByPath(ctx, path)
+func (s *FolderService) GetByPath(ctx context.Context, userID int64, username string, path string) (*model.Folder, error) {
+	cleaned := strings.Trim(fmt.Sprintf("/%s%s", username, path), "/")
+	folder, err := s.folderRepo.GetByPath(ctx, cleaned)
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ type Services struct {
 
 // InitServices wires all services and repositories together. It is the main
 // dependency injection point.
-func InitServices(db *sql.DB, st *storage.Storage) *Services {
+func InitServices(db *sql.DB, st storage.FileManager) *Services {
 	userRepo := repository.NewUserRepository(db)
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
@@ -27,7 +27,7 @@ func InitServices(db *sql.DB, st *storage.Storage) *Services {
 	authSvc := NewAuthService(userRepo, sessRepo)
 	linkSvc := NewUploadLinkService(linkRepo)
 	linkUnlockSvc := NewLinkUnlockService(linkUnlockRepo)
-	folderSvc := NewFolderService(folderRepo, fileRepo)
+	folderSvc := NewFolderService(folderRepo, fileRepo, st)
 	pFileSvc := NewPersonalFileService(st, fileRepo)
 
 	return &Services{

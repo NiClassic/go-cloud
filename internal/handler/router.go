@@ -8,8 +8,8 @@ import (
 	"net/http"
 )
 
-func New(services *service.Services, st *storage.Storage, tmpl *template.Template) *http.ServeMux {
-	authH := NewAuthHandler(services.Auth, tmpl, services.Folder)
+func New(services *service.Services, st storage.FileManager, tmpl *template.Template) *http.ServeMux {
+	authH := NewAuthHandler(services.Auth, tmpl, services.Folder, st)
 	rootH := NewRootHandler(services.Auth)
 	uploadH := NewUploadLinkHandler(services.UploadLink, services.LinkUnlock, tmpl)
 	pFileH := NewPersonalFileUploadHandler(tmpl, st, services.PFile, services.Folder)

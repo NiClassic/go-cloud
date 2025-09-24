@@ -29,7 +29,7 @@
     <input type="hidden" id="current-folder-id" value="{{ .CurrentFolderID }}" />
     <input type="hidden" id="current-folder-path" value="{{ .CurrentFolderPath }}" />
 
-    <form hx-post="/files/upload{{ .CurrentFolderPath }}"
+    <form hx-post="/files/upload/{{ .CurrentFolderPath }}"
           hx-target="#file-rows"
           hx-swap="innerHTML"
           enctype="multipart/form-data"
