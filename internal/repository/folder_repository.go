@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+
 	"github.com/NiClassic/go-cloud/internal/model"
 )
 
@@ -12,9 +13,18 @@ func NewFolderRepository(db *sql.DB) *FolderRepository {
 	return &FolderRepository{newBaseRepo(db)}
 }
 
-func (r *FolderRepository) Insert(ctx context.Context, userID int64, parentID int64, name string, path string) (int64, error) {
+func (r *FolderRepository) Insert(ctx context.Context, userID int64, parentID *int64, name string, path string) (int64, error) {
 	const q = `INSERT INTO folders (user_id, parent_id, name, path) VALUES (?, ?, ?, ?)`
-	res, err := r.db.ExecContext(ctx, q, userID, parentID, name, path)
+
+	var res sql.Result
+	var err error
+
+	if parentID == nil {
+		res, err = r.db.ExecContext(ctx, q, userID, nil, name, path)
+	} else {
+		res, err = r.db.ExecContext(ctx, q, userID, *parentID, name, path)
+	}
+
 	if err != nil {
 		return 0, err
 	}
