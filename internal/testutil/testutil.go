@@ -23,6 +23,11 @@ func SetupTestDB(t *testing.T) *sql.DB {
 		t.Fatalf("failed to ping test database: %v", err)
 	}
 
+	if _, err = testDB.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		_ = testDB.Close()
+		return nil
+	}
+
 	migrationsDir := filepath.Join("../..", "db", "migrations")
 	if err := db.Migrate(testDB, "file://"+migrationsDir); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
