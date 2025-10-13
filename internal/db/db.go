@@ -25,6 +25,11 @@ func New() (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+
+	if _, err = db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
