@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"net/http"
+	"os"
+
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/db"
 	"github.com/NiClassic/go-cloud/internal/handler"
@@ -12,8 +15,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
-	"net/http"
-	"os"
 )
 
 func main() {
@@ -41,7 +42,7 @@ func main() {
 		logger.Fatal("could not connect to db: %v", err)
 	}
 
-	if err := db.Migrate(dbConn); err != nil {
+	if err := db.Migrate(dbConn, "file://./db/migrations"); err != nil {
 		logger.Fatal("could not apply migrations: %v", err)
 	}
 

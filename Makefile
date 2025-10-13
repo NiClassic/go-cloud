@@ -26,3 +26,17 @@ tailwind:
 .PHONY: tailwind-watch
 tailwind-watch:
 	$(TAILWIND) -i $(TAILWIND_INPUT) -o $(TAILWIND_OUTPUT) --watch
+
+
+.PHONY: test
+test:
+	go test -v ./...
+
+.PHONY: test-cover
+test-cover:
+	go test -v -coverprofile=coverage.out ./...
+
+.PHONY: cover-html
+cover-html: test-cover
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "✅ Coverage report generated: coverage.html"

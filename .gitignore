@@ -4,3 +4,6 @@ notes.md
 .idea/
 node_modules/
 .env
+coverage.*
+*.vim
+*.swp
