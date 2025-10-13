@@ -40,3 +40,13 @@ test-cover:
 cover-html: test-cover
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "✅ Coverage report generated: coverage.html"
+
+.PHONY: test-cover-service
+test-cover-service:
+	go test -v -coverprofile=coverage-service.out ./internal/service
+
+.PHONY: test-cover-service-html
+test-cover-service-html: test-cover-service
+	go tool cover -html=coverage-service.out -o coverage-service.html
+	@echo "✅ Coverage report generated: coverage-service.html"
+
