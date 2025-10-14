@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/storage"
-	"strings"
 )
 
 var (
@@ -44,7 +45,13 @@ func (s *FolderService) CreateFolder(ctx context.Context, userID int64, username
 	}
 	cleaned := strings.Trim(fmt.Sprintf("/%s%s", username, path), "/")
 
-	id, err := s.folderRepo.Insert(ctx, userID, parentID, name, cleaned)
+	var id int64
+	var err error
+	if parentID == -1 {
+		id, err = s.folderRepo.Insert(ctx, userID, nil, name, cleaned)
+	} else {
+		id, err = s.folderRepo.Insert(ctx, userID, &parentID, name, cleaned)
+	}
 	if err != nil {
 		return nil, err
 	}

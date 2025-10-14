@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "modernc.org/sqlite"
-	"os"
 )
 
 func New() (*sql.DB, error) {
@@ -24,15 +25,20 @@ func New() (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+
+	if _, err = db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
-func Migrate(db *sql.DB) error {
+func Migrate(db *sql.DB, dbPath string) error {
 	driver, err := sqlite.WithInstance(db, &sqlite.Config{})
 	if err != nil {
 		return err
 	}
-	m, err := migrate.NewWithDatabaseInstance("file://./db/migrations", "sqlite", driver)
+	m, err := migrate.NewWithDatabaseInstance(dbPath, "sqlite", driver)
 	if err != nil {
 		return err
 	}

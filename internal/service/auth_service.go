@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
+
 	"github.com/NiClassic/go-cloud/internal/token"
 
 	"github.com/NiClassic/go-cloud/internal/model"

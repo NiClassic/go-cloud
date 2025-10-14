@@ -26,3 +26,36 @@ tailwind:
 .PHONY: tailwind-watch
 tailwind-watch:
 	$(TAILWIND) -i $(TAILWIND_INPUT) -o $(TAILWIND_OUTPUT) --watch
+
+
+.PHONY: test
+test:
+	go test -v ./...
+
+.PHONY: test-cover
+test-cover:
+	go test -v -coverprofile=coverage.out ./...
+
+.PHONY: cover-html
+cover-html: test-cover
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "✅ Coverage report generated: coverage.html"
+
+.PHONY: test-cover-service
+test-cover-service:
+	go test -v -coverprofile=coverage-service.out ./internal/service
+
+.PHONY: test-cover-service-html
+test-cover-service-html: test-cover-service
+	go tool cover -html=coverage-service.out -o coverage-service.html
+	@echo "✅ Coverage report generated: coverage-service.html"
+
+.PHONY: test-cover-repo
+test-cover-repo:
+	go test -v -coverprofile=coverage-repo.out ./internal/repository
+
+.PHONY: test-cover-repo-html
+test-cover-repo-html: test-cover-repo
+	go tool cover -html=coverage-repo.out -o coverage-repo.html
+	@echo "✅ Coverage report generated: coverage-repo.html"
+
