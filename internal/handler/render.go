@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/NiClassic/go-cloud/config"
-	"github.com/NiClassic/go-cloud/internal/logger"
 	"html/template"
 	"net/http"
 	"path/filepath"
+
+	"github.com/NiClassic/go-cloud/config"
+	"github.com/NiClassic/go-cloud/internal/logger"
 )
 
 type Template int

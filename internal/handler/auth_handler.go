@@ -1,10 +1,12 @@
 package handler
 
 import (
-	"github.com/NiClassic/go-cloud/internal/logger"
-	"github.com/NiClassic/go-cloud/internal/storage"
+	"fmt"
 	"html/template"
 	"net/http"
+
+	"github.com/NiClassic/go-cloud/internal/logger"
+	"github.com/NiClassic/go-cloud/internal/storage"
 
 	"github.com/NiClassic/go-cloud/internal/service"
 )
@@ -31,15 +33,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 		user, err := h.svc.Authenticate(r.Context(), username, password)
 		if err != nil {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			logger.Error("invalid credentials: %v", err)
+			fmt.Fprint(w, "<p>Invalid username or password</p>")
 			return
 		}
 
 		token, err := h.svc.RegisterSession(r.Context(), user)
 		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			logger.Error("internal server error: %v", err)
+			fmt.Fprint(w, "<p>Something went wrong. Please try again</p>")
+
 			return
 		}
 
@@ -50,7 +53,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 			Secure:   true,
 		})
-		http.Redirect(w, r, "/files", http.StatusSeeOther)
+		w.Header().Set("HX-Redirect", "/")
+		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		logger.InvalidMethod(r)
