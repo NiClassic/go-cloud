@@ -1,4 +1,3 @@
-/* === Base Theme and Variables ===================================== */
 :root {
     --color-brand-50: #ffe6ff;
     --color-brand-100: #ffc3ff;
@@ -68,11 +67,25 @@ footer {
     margin-bottom: 0.25rem;
     color: var(--color-muted);
 }
+
+form input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 1rem;
+}
+
+form input:focus {
+    border-color: var(--color-brand-500);
+    outline: none;
+}
+
 /* Components */
 .main-btn {
     background-color: var(--color-brand-500);
     padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius);
 }
 
 /* Custom stuff */
@@ -116,19 +129,22 @@ footer {
     max-width: 300px;
 }
 
-#login-error:empty {
+.alert:empty {
     display: none;
 }
 
-.login-container:not(:empty) {
+.alert:not(:empty) {
     display: block;
     width: 100%;
     text-align: start;
-    color: var(--color-error);
     font-size: 0.9rem;
 }
 
-.login-container:not(:empty) p {
+.alert-error {
+    color: var(--color-error) !important;
+}
+
+.alert:not(:empty) p {
     margin: 0;
     padding: 0;
 }
@@ -140,53 +156,17 @@ footer {
     color: var(--color-muted);
 }
 
-.login-form input {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 2px solid var(--color-border);
-    border-radius: 0.5rem;
-    font-size: 1rem;
-}
-
-.login-form input:focus {
-    border-color: var(--color-brand-500);
-    outline: none;
-}
-
 .login-form button {
     width: 100%;
     padding: 0.75rem;
     background-color: var(--color-brand-500);
     color: white;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius);
     font-weight: 600;
     cursor: pointer;
 }
 
 .login-form button:hover {
     background-color: var(--color-brand-600);
-}
-
-/* Media query stuff */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --color-bg: #0d0d0d;
-        --color-surface: #1a1a1a;
-        --color-text: #f3f4f6;
-        --color-border: #333;
-    }
-
-    body {
-        background: var(--color-bg);
-        color: var(--color-text);
-    }
-
-    a {
-        color: var(--color-brand-500);
-    }
-
-    a:hover {
-        color: var(--color-brand-300);
-    }
 }
