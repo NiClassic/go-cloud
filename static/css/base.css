@@ -59,6 +59,15 @@ h6 {
 
 a {
     text-decoration: none;
+    color: var(--text);
+}
+
+a:visited {
+    color: var(--text);
+}
+
+a:hover {
+    color: var(--color-brand-500);
 }
 
 footer {
@@ -110,6 +119,42 @@ form input:focus {
 
 /* Custom stuff */
 
+.auth-nav-links {
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.active {
+    color: var(--color-brand-500) !important;
+}
+
+.auth-nav-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding-right: 0.75rem;
+}
+
+.logout-form {
+    display: flex;
+}
+
+.logout-form button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.logout-form button:hover {
+    color: var(--color-brand-500);
+}
+
 .header {
     margin-top: 1rem;
     display: flex;
@@ -121,16 +166,16 @@ form input:focus {
     font-size: 1.5rem;
     line-height: calc(2 / 1.5);
     font-weight: bold;
-    color: var(--color-brand-500);
+    color: var(--color-brand-500) !important;
     padding-left: 0.75rem;
 }
 
 .login-link {
-    color: white;
+    color: white !important;
 }
 
 .register-link {
-    color: var(--color-brand-500);
+    color: var(--color-brand-500) !important;
     padding: 0.75rem 1rem;
 }
 

@@ -1,4 +1,16 @@
-{{ template "header.html" . }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} | Go-Cloud</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+</head>
+
+<body class="login-body">
+    {{ template "header" . }}
 
 <div class="w-full h-full lg:px-6 mt-8">
     <div class="flex justify-items-start items-center mb-8 gap-4">
@@ -228,4 +240,6 @@
     });
 </script>
 
-{{ template "footer.html" . }}
+{{ template "footer" . }}
+</body>
+</html>
