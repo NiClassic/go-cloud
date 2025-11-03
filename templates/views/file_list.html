@@ -1,31 +1,31 @@
 {{ define "file_rows" }}
 {{ range .Folders }}
-<tr class="cursor-pointer hover:bg-gray-200" onclick="location.href='/files/{{ .Path }}'">
-    <td class="py-3 px-2 sm:px-0">
-        <div class="flex items-center min-w-0">
-            <i class="material-icons w-6 mr-2 text-gray-600 flex-shrink-0">folder</i>
-            <span class="font-medium truncate">{{ .Name }}</span>
+<tr onclick="location.href='/files/{{ .Path }}'">
+    <td>
+        <div>
+            <i class="material-icons">folder</i>
+            <span>{{ .Name }}</span>
         </div>
     </td>
-    <td class="py-3 px-2 sm:px-0 text-left whitespace-nowrap">
+    <td>
         {{ formatSmart .CreatedAt }}
     </td>
-    <td class="py-3 px-2 sm:px-0 text-right text-gray-400 whitespace-nowrap">—</td>
+    <td>—</td>
 </tr>
 {{ end }}
 
 {{ range .Files }}
-<tr class="cursor-pointer hover:bg-gray-200" onclick="location.href='/download/{{ .Id }}'">
-    <td class="py-3 px-2 sm:px-0">
-        <div class="flex items-center min-w-0">
-            <i class="material-icons w-6 mr-2 text-gray-500 flex-shrink-0">description</i>
-            <span class="truncate">{{ .Name }}</span>
+<tr onclick="location.href='/download/{{ .Id }}'">
+    <td>
+        <div>
+            <i class="material-icons">description</i>
+            <span>{{ .Name }}</span>
         </div>
     </td>
-    <td class="py-3 px-2 sm:px-0 text-left whitespace-nowrap">
+    <td>
         {{ formatSmart .CreatedAt }}
     </td>
-    <td class="py-3 px-2 sm:px-0 text-right whitespace-nowrap">{{ .Size }}</td>
+    <td>{{ .Size }}</td>
 </tr>
 {{ end }}
 {{ end }}
