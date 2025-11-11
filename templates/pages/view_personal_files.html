@@ -1,27 +1,35 @@
-{{ template "header.html" . }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} | Go-Cloud</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+</head>
 
-<div class="w-full h-full lg:px-6 mt-8">
-    <div class="flex justify-items-start items-center mb-8 gap-4">
-        <div id="dropdown-container" class="relative">
-            <button id="new-button" type="button" class="inline-flex items-center justify-center px-4 py-2 bg-brand-500 hover:bg-brand-700 text-white font-semibold rounded-md transition">
+<body class="login-body files-body">
+    {{ template "header" . }}
+
+<main>
+<div>
+    <div>
+        <div id="dropdown-container">
+            <button id="new-button">
                 <i class="material-icons">add</i>
                 New
             </button>
 
-            <div id="dropdown-menu"
-                 class="hidden absolute top-full mt-2 w-48 bg-white rounded-md shadow-md ring-2 ring-gray-200 ring-opacity-5 z-20 left-0">
-                <div class="py-1" role="menu">
-                    <button id="upload-file-button" type="button"
-                            class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="material-icons w-6 mr-2">upload_file</i>
+            <div id="dropdown-menu" class="hidden">
+                    <button id="upload-file-button" type="button">
+                        <i class="material-icons">upload_file</i>
                         <span>Upload File</span>
                     </button>
-                    <button id="new-folder-button" type="button"
-                            class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="material-icons w-6 mr-2">create_new_folder</i>
+                    <button id="new-folder-button" type="button">
+                        <i class="material-icons">create_new_folder</i>
                         <span>New folder</span>
                     </button>
-                </div>
             </div>
         </div>
     </div>
@@ -32,21 +40,19 @@
     <form hx-post="/files/upload/{{ .CurrentFolderPath }}"
           hx-target="#file-rows"
           hx-swap="innerHTML"
-          enctype="multipart/form-data"
-          class="hidden">
+          enctype="multipart/form-data">
         <input id="files"
                name="files"
                type="file"
-               multiple
-               class="sr-only"
-        >
+               class="hidden"
+               multiple>
 
-        <ul id="selected-files" class="mt-2 text-sm text-gray-600 space-y-1"></ul>
+        <ul id="selected-files"></ul>
     </form>
 
-    <div id="breadcrumbs" class="flex flex-row items-center">
+    <div id="breadcrumbs">
         {{ range $idx, $el := .Breadcrumbs }}
-        <a href="/files{{ $el.Path }}" class="{{ if $el.Current }} text-brand-500 {{ else }} text-gray-700 hover:text-gray-900 {{ end }} ">{{ $el.Name }}</a>
+        <a href="/files{{ $el.Path }}" class="{{ if $el.Current }}current-breadcrumb{{ end }}">{{ $el.Name }}</a>
         {{ if ne $idx $.LastBreadcrumbIndex }}
         <i class="material-icons">chevron_right</i>
         {{end}}
@@ -54,18 +60,18 @@
     </div>
 
 
-<div id="file-list" class="mt-6 overflow-x-auto">
-    <table class="w-full text-sm text-gray-700 table-fixed">
+<div id="file-list">
+    <table>
         <colgroup>
-            <col class="w-[60%] sm:w-[60%] md:w-[70%]">
-            <col class="w-[20%] sm:w-[20%] md:w-[15%]">
-            <col class="w-[20%] sm:w-[20%] md:w-[15%]">
+            <col>
+            <col>
+            <col>
         </colgroup>
         <thead>
-        <tr class="border-b">
-            <th class="text-left py-2 px-2 sm:px-0 font-semibold">Name</th>
-            <th class="text-left py-2 px-2 sm:px-0 font-semibold">Uploaded</th>
-            <th class="text-right py-2 px-2 sm:px-0 font-semibold">Size</th>
+        <tr>
+            <th>Name</th>
+            <th>Uploaded</th>
+            <th>Size</th>
         </tr>
         </thead>
         <tbody id="file-rows">
@@ -228,4 +234,7 @@
     });
 </script>
 
-{{ template "footer.html" . }}
+</main>
+{{ template "footer" . }}
+</body>
+</html>

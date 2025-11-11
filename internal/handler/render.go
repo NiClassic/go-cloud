@@ -1,11 +1,13 @@
 package handler
 
 import (
-	"github.com/NiClassic/go-cloud/config"
-	"github.com/NiClassic/go-cloud/internal/logger"
+	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
+
+	"github.com/NiClassic/go-cloud/config"
+	"github.com/NiClassic/go-cloud/internal/logger"
 )
 
 type Template int
@@ -83,4 +85,14 @@ func Render(w http.ResponseWriter, tmpl *template.Template, isAuthenticated bool
 		logger.Error("could not render template: %v", err)
 		http.Error(w, "template execution error", http.StatusInternalServerError)
 	}
+}
+
+// Error has to be used in combination with htmx to display error messages in forms.
+func Error(w http.ResponseWriter, err string) {
+	fmt.Fprintf(w, "<p>%s</p>", err)
+}
+
+func RedirectHTMX(w http.ResponseWriter, dst string) {
+	w.Header().Set("HX-Redirect", dst)
+	w.WriteHeader(http.StatusNoContent)
 }

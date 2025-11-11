@@ -1,0 +1,30 @@
+{{ define "header" }}
+<div class="header">
+    <a class="logo" href="/">Go-Cloud</a>
+
+    {{ if .IsAuthenticated }}
+
+    <div class="auth-nav-links">
+        <a href="/files" class="{{ if eq .Template 3 }}active{{ end }}">Files</a>
+        <a href="/links" class="{{ if eq .Template 5 }}active{{ end }}">Shares</a>
+    </div>
+    <div class="auth-nav-actions">
+        <a href="/profile">Profile</a>
+        <form action="/logout" method="post" class="logout-form">
+            <button type="submit">
+                Logout
+            </button>
+        </form>
+    </div>
+
+    {{ else }}
+
+    <div>
+        <a class="login-link main-btn" href="/login">Login</a>
+        <a class="register-link" href="/register">Register</a>
+    </div>
+
+    {{ end }}
+
+</div>
+{{ end }}

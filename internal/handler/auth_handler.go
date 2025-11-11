@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"github.com/NiClassic/go-cloud/internal/logger"
-	"github.com/NiClassic/go-cloud/internal/storage"
 	"html/template"
 	"net/http"
+
+	"github.com/NiClassic/go-cloud/internal/logger"
+	"github.com/NiClassic/go-cloud/internal/storage"
 
 	"github.com/NiClassic/go-cloud/internal/service"
 )
@@ -20,6 +21,16 @@ func NewAuthHandler(svc *service.AuthService, tmpl *template.Template, folderSer
 	return &AuthHandler{svc: svc, tmpl: tmpl, folderService: folderService, st: st}
 }
 
+func setSessionCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+	})
+}
+
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	switch r.Method {
@@ -31,26 +42,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 		user, err := h.svc.Authenticate(r.Context(), username, password)
 		if err != nil {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			logger.Error("invalid credentials: %v", err)
+			Error(w, "Invalid username or password")
 			return
 		}
 
 		token, err := h.svc.RegisterSession(r.Context(), user)
 		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			logger.Error("internal server error: %v", err)
+			Error(w, "Something went wrong. Please try again")
 			return
 		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:     "session_token",
-			Value:    token,
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-		})
-		http.Redirect(w, r, "/files", http.StatusSeeOther)
+		setSessionCookie(w, token)
+		RedirectHTMX(w, "/")
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		logger.InvalidMethod(r)
@@ -72,17 +76,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := h.svc.Register(r.Context(), username, r.Form.Get("password"))
 		if err != nil {
-			http.Error(w, "could not create user", http.StatusInternalServerError)
+			Error(w, "Something went wrong. Please try again")
 			logger.Error("could not create user: %v", err)
 			return
 		}
 		if _, err = h.folderService.CreateFolder(r.Context(), userID, username, -1, "/", "/"); err != nil {
-			http.Error(w, "could not create folder in db", http.StatusInternalServerError)
+			Error(w, "Something went wrong. Please try again")
 			logger.Error("could not create folder in db: %v", err)
 			return
 		}
 		logger.Info("user created: %v, user folder created", r.Form.Get("username"))
-		http.Redirect(w, r, "/files", http.StatusSeeOther)
+		RedirectHTMX(w, "/")
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		logger.InvalidMethod(r)
