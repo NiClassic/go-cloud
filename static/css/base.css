@@ -63,11 +63,11 @@ h6 {
 
 a {
     text-decoration: none;
-    color: var(--text);
+    color: var(--color-text);
 }
 
 a:visited {
-    color: var(--text);
+    color: var(--color-text);
 }
 
 a:hover {
@@ -330,7 +330,7 @@ form input:focus {
 }
 
 .current-breadcrumb {
-    color: var(--color-brand-500);
+    color: var(--color-brand-500) !important;
 }
 
 #file-list {
@@ -380,6 +380,10 @@ form input:focus {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+#file-list tr div {
+    cursor: pointer;
 }
 
 @media (max-width: 640px) {
