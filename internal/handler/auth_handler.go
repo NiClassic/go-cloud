@@ -67,6 +67,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		h.r.Render(w, false, RegisterPage, "Register", map[string]any{})
 	case http.MethodPost:
+		if !h.cfg.AllowRegistrations {
+			h.r.Error(w, "Registrations are not allowed")
+			return
+		}
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form", http.StatusBadRequest)
 			logger.Error("invalid form: %v", err)

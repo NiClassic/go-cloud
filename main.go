@@ -54,8 +54,10 @@ func main() {
 
 	mux := handler.New(cfg, renderer, services, st)
 
-	logger.Info("timezone is %s", cfg.TimezoneName)
-	logger.Info("listening on :8080 (Debug Mode=%v)", cfg.DebugMode)
+	logger.Info("DebugMode:          %v", cfg.DebugMode)
+	logger.Info("AllowRegistrations: %v", cfg.AllowRegistrations)
+	logger.Info("Timezone:           %v", cfg.TimezoneName)
+	logger.Info("listening on :8080")
 	if err = http.ListenAndServe(":8080", mux); err != nil {
 		logger.Fatal("could not run server: %v", err)
 	}
