@@ -18,23 +18,15 @@ import (
 )
 
 func main() {
-	config.Init()
-
-	logger.Init(config.Debug)
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		logger.Info("did not find .env file, falling back to shell environment")
 	}
+	cfg := config.Init()
+	logger.Init(cfg.DebugMode)
 
-	timezoneName := os.Getenv("TZ")
-	if timezoneName == "" {
-		timezoneName = "UTC"
-		logger.Info("did not find TZ environment variable, using UTC")
-	}
-
-	if err := timezone.Init(timezoneName); err != nil {
-		logger.Fatal("could not initialize timezone '%s': %v", timezoneName, err)
+	if err := timezone.Init(cfg.TimezoneName); err != nil {
+		logger.Fatal("could not initialize timezone '%s': %v", cfg.TimezoneName, err)
 	}
 
 	dbConn, err := db.New()
@@ -55,16 +47,17 @@ func main() {
 	st := storage.NewIOStorage(os.Getenv("DATA_ROOT"))
 
 	services := service.InitServices(dbConn, st)
-
-	tmpl, err := handler.ParseTemplates()
+	renderer, err := handler.NewRenderer(cfg)
 	if err != nil {
-		logger.Fatal("could not parse templates: %v", err)
+		logger.Fatal("could not initialize renderer: %v", err)
 	}
 
-	mux := handler.New(services, st, tmpl)
+	mux := handler.New(cfg, renderer, services, st)
 
-	logger.Info("timezone is %s", timezoneName)
-	logger.Info("listening on :8080 (Debug Mode=%v)", config.Debug)
+	logger.Info("DebugMode:          %v", cfg.DebugMode)
+	logger.Info("AllowRegistrations: %v", cfg.AllowRegistrations)
+	logger.Info("Timezone:           %v", cfg.TimezoneName)
+	logger.Info("listening on :8080")
 	if err = http.ListenAndServe(":8080", mux); err != nil {
 		logger.Fatal("could not run server: %v", err)
 	}

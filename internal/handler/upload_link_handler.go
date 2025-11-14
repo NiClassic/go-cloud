@@ -2,9 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/timezone"
-	"html/template"
 	"net/http"
 	"strings"
 	"time"
@@ -13,16 +13,16 @@ import (
 )
 
 type UploadLinkHandler struct {
+	*baseHandler
 	linkService       *service.UploadLinkService
 	linkUnlockService *service.LinkUnlockService
-	tmpl              *template.Template
 }
 
-func NewUploadLinkHandler(ls *service.UploadLinkService, lu *service.LinkUnlockService, tmpl *template.Template) *UploadLinkHandler {
+func NewUploadLinkHandler(cfg *config.Config, r *Renderer, ls *service.UploadLinkService, lu *service.LinkUnlockService) *UploadLinkHandler {
 	return &UploadLinkHandler{
+		baseHandler:       newBaseHandler(cfg, r),
 		linkService:       ls,
 		linkUnlockService: lu,
-		tmpl:              tmpl,
 	}
 }
 
@@ -34,7 +34,7 @@ func (h *UploadLinkHandler) ShowLinks(w http.ResponseWriter, r *http.Request) {
 		logger.Error("could not get all links: %v", err)
 		return
 	}
-	Render(w, h.tmpl, true, LinkSharePage, "Upload Links", map[string]any{
+	h.r.Render(w, true, LinkSharePage, "Upload Links", map[string]any{
 		"Links": links,
 		"Now":   timezone.TZ.GetUTCNow(),
 	})
@@ -62,7 +62,7 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 	switch r.Method {
 	case http.MethodGet:
 		if len(parts) == 2 && parts[1] == "auth" {
-			Render(w, h.tmpl, true, LinkSharePasswordPage, "Unlock Link", map[string]any{
+			h.r.Render(w, true, LinkSharePasswordPage, "Unlock Link", map[string]any{
 				"LinkName":  link.Name,
 				"LinkToken": link.LinkToken,
 			})
@@ -74,7 +74,7 @@ func (h *UploadLinkHandler) VisitUploadLink(w http.ResponseWriter, r *http.Reque
 			logger.Error("could not visit upload link: %v", err)
 			return
 		}
-		Render(w, h.tmpl, true, LinkShareDetailPage, "View Link", map[string]any{
+		h.r.Render(w, true, LinkShareDetailPage, "View Link", map[string]any{
 			"LinkName": link.Name,
 		})
 
@@ -110,7 +110,7 @@ func (h *UploadLinkHandler) CreateUploadLink(w http.ResponseWriter, r *http.Requ
 	switch r.Method {
 	case http.MethodGet:
 		exp := timezone.TZ.GetUTCNow().Add(time.Hour)
-		Render(w, h.tmpl, true, LinkShareCreationPage, "Create Link", map[string]any{
+		h.r.Render(w, true, LinkShareCreationPage, "Create Link", map[string]any{
 			"DefaultExpiresAt": exp,
 		})
 	case http.MethodPost:

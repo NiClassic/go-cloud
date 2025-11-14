@@ -10,6 +10,17 @@ import (
 	"github.com/NiClassic/go-cloud/internal/logger"
 )
 
+type Renderer struct {
+	cfg  *config.Config
+	tmpl *template.Template
+}
+
+func NewRenderer(cfg *config.Config) (*Renderer, error) {
+	r := &Renderer{cfg: cfg}
+	err := r.parseTemplates()
+	return r, err
+}
+
 type Template int
 
 const (
@@ -24,7 +35,7 @@ const (
 	LinkShareCreationPage
 )
 
-func ParseTemplates() (*template.Template, error) {
+func (r *Renderer) parseTemplates() error {
 	dirs := []string{
 		"templates/*.html",
 		"templates/*/*.html",
@@ -34,13 +45,18 @@ func ParseTemplates() (*template.Template, error) {
 	for _, dir := range dirs {
 		ff, err := filepath.Glob(dir)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		files = append(files, ff...)
 	}
 
 	tmpl := template.New("").Funcs(GetTemplateFunctions())
-	return tmpl.ParseFiles(files...)
+	finalTemplates, err := tmpl.ParseFiles(files...)
+	if err != nil {
+		return err
+	}
+	r.tmpl = finalTemplates
+	return nil
 }
 
 func pageToTemplateName(template Template) string {
@@ -68,31 +84,30 @@ func pageToTemplateName(template Template) string {
 	}
 }
 
-func Render(w http.ResponseWriter, tmpl *template.Template, isAuthenticated bool, template Template, title string, data map[string]any) {
+func (r *Renderer) Render(w http.ResponseWriter, isAuthenticated bool, template Template, title string, data map[string]any) {
 	data["Title"] = title
 	data["IsAuthenticated"] = isAuthenticated
 	data["Template"] = template
-	if config.Debug {
-		tmplNew, err := ParseTemplates()
+	if r.cfg.DebugMode {
+		err := r.parseTemplates()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("could not parse templates: %v", err)
 			return
 		}
-		tmpl = tmplNew
 	}
-	if err := tmpl.ExecuteTemplate(w, pageToTemplateName(template), data); err != nil {
+	if err := r.tmpl.ExecuteTemplate(w, pageToTemplateName(template), data); err != nil {
 		logger.Error("could not render template: %v", err)
 		http.Error(w, "template execution error", http.StatusInternalServerError)
 	}
 }
 
 // Error has to be used in combination with htmx to display error messages in forms.
-func Error(w http.ResponseWriter, err string) {
+func (r *Renderer) Error(w http.ResponseWriter, err string) {
 	fmt.Fprintf(w, "<p>%s</p>", err)
 }
 
-func RedirectHTMX(w http.ResponseWriter, dst string) {
+func (r *Renderer) RedirectHTMX(w http.ResponseWriter, dst string) {
 	w.Header().Set("HX-Redirect", dst)
 	w.WriteHeader(http.StatusNoContent)
 }
