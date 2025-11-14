@@ -2,26 +2,26 @@ package handler
 
 import (
 	"fmt"
+	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/service"
-	"html/template"
 	"net/http"
 	"path"
 	"strings"
 )
 
 type FolderHandler struct {
+	*baseHandler
 	folderSvc *service.FolderService
 	fileSvc   *service.PersonalFileService
-	tmpl      *template.Template
 }
 
-func NewFolderHandler(folderSvc *service.FolderService, fileSvc *service.PersonalFileService, tmpl *template.Template) *FolderHandler {
+func NewFolderHandler(cfg *config.Config, r *Renderer, folderSvc *service.FolderService, fileSvc *service.PersonalFileService) *FolderHandler {
 	return &FolderHandler{
-		folderSvc: folderSvc,
-		fileSvc:   fileSvc,
-		tmpl:      tmpl,
+		baseHandler: newBaseHandler(cfg, r),
+		folderSvc:   folderSvc,
+		fileSvc:     fileSvc,
 	}
 }
 
@@ -122,7 +122,7 @@ func (h *FolderHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Check if this is an HTMX request
 	if r.Header.Get("HX-Request") == "true" {
-		Render(w, h.tmpl, true, FileRows, "", map[string]any{
+		h.r.Render(w, true, FileRows, "", map[string]any{
 			"Folders": foldersToRows(folders, user.Username),
 			"Files":   filesToRows(files),
 		})

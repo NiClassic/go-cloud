@@ -2,11 +2,11 @@ package handler
 
 import (
 	"fmt"
+	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
-	"html/template"
 	"net/http"
 	"os"
 	"strconv"
@@ -23,14 +23,14 @@ type fileRow struct {
 	Path      string
 }
 type PersonalFileUploadHandler struct {
-	tmpl          *template.Template
+	*baseHandler
 	sto           storage.FileManager
 	fileService   *service.PersonalFileService
 	folderService *service.FolderService
 }
 
-func NewPersonalFileUploadHandler(tmpl *template.Template, sto storage.FileManager, fileService *service.PersonalFileService, folderService *service.FolderService) *PersonalFileUploadHandler {
-	return &PersonalFileUploadHandler{tmpl, sto, fileService, folderService}
+func NewPersonalFileUploadHandler(cfg *config.Config, r *Renderer, sto storage.FileManager, fileService *service.PersonalFileService, folderService *service.FolderService) *PersonalFileUploadHandler {
+	return &PersonalFileUploadHandler{newBaseHandler(cfg, r), sto, fileService, folderService}
 }
 
 func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
@@ -125,7 +125,7 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	Render(w, p.tmpl, true, PersonalFilePage, "Your Files", map[string]any{
+	p.r.Render(w, true, PersonalFilePage, "Your Files", map[string]any{
 		"Files":               p.filesToRows(files),
 		"Folders":             p.foldersToRows(folders, user.Username),
 		"CurrentFolderID":     folder.ID,
@@ -183,7 +183,7 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	Render(w, p.tmpl, true, FileRows, "", map[string]any{
+	p.r.Render(w, true, FileRows, "", map[string]any{
 		"Files":   p.filesToRows(files),
 		"Folders": p.foldersToRows(folders, user.Username),
 	})

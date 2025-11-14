@@ -12,12 +12,13 @@ docker compose up --build
 
 ### Available Environment variables in docker-compose.yml
 
-| Variable  | Example Value    | Effect                                      |
-|-----------|------------------|---------------------------------------------|
-| DATA_ROOT | /data            | Root storage path of all the uploaded files |
-| DB_FILE   | /data/storage.db | Path of the SQLite database                 |
-| DEBUG     | true             | Enable debug logs                           |
-| TZ        | Europe/Berlin    | Set the local timezone for date formatting  |
+| Variable           | Example Value    | Effect                                      |
+|--------------------|------------------|---------------------------------------------|
+| DATA_ROOT          | /data            | Root storage path of all the uploaded files |
+| DB_FILE            | /data/storage.db | Path of the SQLite database                 |
+| DEBUG              | true             | Enable debug logs                           |
+| TZ                 | Europe/Berlin    | Set the local timezone for date formatting  |
+| ALLOW_REGISTRATION | true             | Enable or disable new account registration  |
 
 This will:
 - Run the database migrations

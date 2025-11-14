@@ -1,19 +1,19 @@
 package handler
 
 import (
+	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/middleware"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
-	"html/template"
 	"net/http"
 )
 
-func New(services *service.Services, st storage.FileManager, tmpl *template.Template) *http.ServeMux {
-	authH := NewAuthHandler(services.Auth, tmpl, services.Folder, st)
+func New(cfg *config.Config, r *Renderer, services *service.Services, st storage.FileManager) *http.ServeMux {
+	authH := NewAuthHandler(cfg, r, services.Auth, services.Folder, st)
 	rootH := NewRootHandler(services.Auth)
-	uploadH := NewUploadLinkHandler(services.UploadLink, services.LinkUnlock, tmpl)
-	pFileH := NewPersonalFileUploadHandler(tmpl, st, services.PFile, services.Folder)
-	folderH := NewFolderHandler(services.Folder, services.PFile, tmpl)
+	uploadH := NewUploadLinkHandler(cfg, r, services.UploadLink, services.LinkUnlock)
+	pFileH := NewPersonalFileUploadHandler(cfg, r, st, services.PFile, services.Folder)
+	folderH := NewFolderHandler(cfg, r, services.Folder, services.PFile)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))

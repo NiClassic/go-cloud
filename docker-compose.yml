@@ -9,5 +9,6 @@ services:
       - DB_FILE=/data/storage.db
       - DEBUG=true
       - TZ=Europe/Berlin
+      - ALLOW_REGISTRATION=true
     volumes:
       - ./data:/data

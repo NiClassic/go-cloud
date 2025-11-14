@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"html/template"
+	"github.com/NiClassic/go-cloud/config"
 	"net/http"
 
 	"github.com/NiClassic/go-cloud/internal/logger"
@@ -11,14 +11,14 @@ import (
 )
 
 type AuthHandler struct {
+	*baseHandler
 	svc           *service.AuthService
-	tmpl          *template.Template
 	folderService *service.FolderService
 	st            storage.FileManager
 }
 
-func NewAuthHandler(svc *service.AuthService, tmpl *template.Template, folderService *service.FolderService, st storage.FileManager) *AuthHandler {
-	return &AuthHandler{svc: svc, tmpl: tmpl, folderService: folderService, st: st}
+func NewAuthHandler(cfg *config.Config, r *Renderer, svc *service.AuthService, folderService *service.FolderService, st storage.FileManager) *AuthHandler {
+	return &AuthHandler{baseHandler: newBaseHandler(cfg, r), svc: svc, folderService: folderService, st: st}
 }
 
 func setSessionCookie(w http.ResponseWriter, token string) {
@@ -35,7 +35,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	switch r.Method {
 	case http.MethodGet:
-		Render(w, h.tmpl, false, LoginPage, "Login", map[string]any{})
+		h.r.Render(w, false, LoginPage, "Login", map[string]any{})
 	case http.MethodPost:
 		username := r.FormValue("username")
 		password := r.FormValue("password")
@@ -43,18 +43,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		user, err := h.svc.Authenticate(r.Context(), username, password)
 		if err != nil {
 			logger.Error("invalid credentials: %v", err)
-			Error(w, "Invalid username or password")
+			h.r.Error(w, "Invalid username or password")
 			return
 		}
 
 		token, err := h.svc.RegisterSession(r.Context(), user)
 		if err != nil {
 			logger.Error("internal server error: %v", err)
-			Error(w, "Something went wrong. Please try again")
+			h.r.Error(w, "Something went wrong. Please try again")
 			return
 		}
 		setSessionCookie(w, token)
-		RedirectHTMX(w, "/")
+		h.r.RedirectHTMX(w, "/")
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		logger.InvalidMethod(r)
@@ -65,7 +65,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	switch r.Method {
 	case http.MethodGet:
-		Render(w, h.tmpl, false, RegisterPage, "Register", map[string]any{})
+		h.r.Render(w, false, RegisterPage, "Register", map[string]any{})
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form", http.StatusBadRequest)
@@ -76,17 +76,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := h.svc.Register(r.Context(), username, r.Form.Get("password"))
 		if err != nil {
-			Error(w, "Something went wrong. Please try again")
+			h.r.Error(w, "Something went wrong. Please try again")
 			logger.Error("could not create user: %v", err)
 			return
 		}
 		if _, err = h.folderService.CreateFolder(r.Context(), userID, username, -1, "/", "/"); err != nil {
-			Error(w, "Something went wrong. Please try again")
+			h.r.Error(w, "Something went wrong. Please try again")
 			logger.Error("could not create folder in db: %v", err)
 			return
 		}
 		logger.Info("user created: %v, user folder created", r.Form.Get("username"))
-		RedirectHTMX(w, "/")
+		h.r.RedirectHTMX(w, "/")
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		logger.InvalidMethod(r)

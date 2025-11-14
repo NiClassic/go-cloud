@@ -1,19 +1,19 @@
 package handler
 
 import (
-	"html/template"
+	"github.com/NiClassic/go-cloud/config"
 	"net/http"
 )
 
-type DashboardHandler struct{ tmpl *template.Template }
+type DashboardHandler struct{ *baseHandler }
 
-func NewDashboardHandler(tmpl *template.Template) *DashboardHandler {
-	return &DashboardHandler{tmpl: tmpl}
+func NewDashboardHandler(cfg *config.Config, r *Renderer) *DashboardHandler {
+	return &DashboardHandler{baseHandler: newBaseHandler(cfg, r)}
 }
 
 func (h *DashboardHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	user := ExtractUserOrRedirect(w, r)
-	Render(w, h.tmpl, true, DashboardPage, "Dashboard", map[string]any{
+	h.r.Render(w, true, DashboardPage, "Dashboard", map[string]any{
 		"Username": user.Username,
 	})
 }
