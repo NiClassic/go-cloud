@@ -15,7 +15,7 @@
 {{ end }}
 
 {{ range .Files }}
-<tr onclick="location.href='/download/{{ .Id }}'">
+<tr onclick="window.open('/download/{{ .Id }}', '_blank')">
     <td>
         <div>
             <i class="material-icons">description</i>

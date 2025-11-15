@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
-
 	"github.com/NiClassic/go-cloud/internal/model"
+	"github.com/NiClassic/go-cloud/internal/path"
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/storage"
 )
@@ -17,16 +15,18 @@ var (
 	ErrFolderAlreadyExists = errors.New("folder already exists")
 	ErrCannotMoveToChild   = errors.New("cannot folder to its own child")
 	ErrFileNotFound        = errors.New("file not found")
+	ErrInvalidFolderPath   = errors.New("invalid folder path")
 )
 
 type FolderService struct {
 	folderRepo *repository.FolderRepository
 	fileRepo   *repository.PersonalFileRepository
 	st         storage.FileManager
+	converter  *path.Converter
 }
 
-func NewFolderService(folderRepo *repository.FolderRepository, fileRepo *repository.PersonalFileRepository, st storage.FileManager) *FolderService {
-	return &FolderService{folderRepo, fileRepo, st}
+func NewFolderService(folderRepo *repository.FolderRepository, fileRepo *repository.PersonalFileRepository, st storage.FileManager, c *path.Converter) *FolderService {
+	return &FolderService{folderRepo, fileRepo, st, c}
 }
 
 func (s *FolderService) CreateFolder(ctx context.Context, userID int64, username string, parentID int64, name, path string) (*model.Folder, error) {
@@ -34,6 +34,15 @@ func (s *FolderService) CreateFolder(ctx context.Context, userID int64, username
 		return nil, ErrInvalidFolderName
 	}
 
+	// Convert input path to DB format (no leading/trailing slashes, relative to user)
+	dbPath := s.converter.ToDBPath(username, path)
+
+	// Validate the path
+	if !s.converter.IsValidPath(dbPath) {
+		return nil, ErrInvalidFolderPath
+	}
+
+	// Check parent if specified
 	if parentID != -1 {
 		parent, err := s.folderRepo.GetByID(ctx, parentID)
 		if err != nil {
@@ -43,23 +52,24 @@ func (s *FolderService) CreateFolder(ctx context.Context, userID int64, username
 			return nil, ErrFolderNotFound
 		}
 	}
-	cleaned := strings.Trim(fmt.Sprintf("/%s%s", username, path), "/")
 
+	// Store in database with clean path
 	var id int64
 	var err error
 	if parentID == -1 {
-		id, err = s.folderRepo.Insert(ctx, userID, nil, name, cleaned)
+		id, err = s.folderRepo.Insert(ctx, userID, nil, name, dbPath)
 	} else {
-		id, err = s.folderRepo.Insert(ctx, userID, &parentID, name, cleaned)
+		id, err = s.folderRepo.Insert(ctx, userID, &parentID, name, dbPath)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = s.st.EnsureDir(username, path)
-	if err != nil {
+	// Ensure directory exists on filesystem
+	if err := s.converter.EnsureDir(username, dbPath); err != nil {
 		return nil, err
 	}
+
 	return s.folderRepo.GetByID(ctx, id)
 }
 
@@ -76,8 +86,9 @@ func (s *FolderService) GetById(ctx context.Context, userID, folderID int64) (*m
 }
 
 func (s *FolderService) GetByPath(ctx context.Context, userID int64, username string, path string) (*model.Folder, error) {
-	cleaned := strings.Trim(fmt.Sprintf("/%s%s", username, path), "/")
-	folder, err := s.folderRepo.GetByPath(ctx, cleaned)
+	dbPath := s.converter.ToDBPath(username, path)
+
+	folder, err := s.folderRepo.GetByPathAndUser(ctx, dbPath, userID)
 	if err != nil {
 		return nil, err
 	}

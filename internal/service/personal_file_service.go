@@ -4,25 +4,24 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/NiClassic/go-cloud/internal/model"
+	"github.com/NiClassic/go-cloud/internal/path"
+	"github.com/NiClassic/go-cloud/internal/repository"
+	"github.com/NiClassic/go-cloud/internal/storage"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
-
-	"github.com/NiClassic/go-cloud/internal/logger"
-	"github.com/NiClassic/go-cloud/internal/model"
-	"github.com/NiClassic/go-cloud/internal/repository"
-	"github.com/NiClassic/go-cloud/internal/storage"
 )
 
 type PersonalFileService struct {
-	sto  storage.FileManager
-	repo *repository.PersonalFileRepository
+	sto       storage.FileManager
+	repo      *repository.PersonalFileRepository
+	converter *path.Converter
 }
 
-func NewPersonalFileService(sto storage.FileManager, repo *repository.PersonalFileRepository) *PersonalFileService {
-	return &PersonalFileService{sto, repo}
+func NewPersonalFileService(sto storage.FileManager, repo *repository.PersonalFileRepository, c *path.Converter) *PersonalFileService {
+	return &PersonalFileService{sto, repo, c}
 }
 
 func (p *PersonalFileService) GetUserFiles(ctx context.Context, user *model.User) ([]*model.File, error) {
@@ -43,17 +42,13 @@ func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, 
 			return fmt.Errorf("failed to get next part: %v", err)
 		}
 
-		defer func(partToClose *multipart.Part) {
-			if closeErr := partToClose.Close(); closeErr != nil {
-				logger.Error("warning: failed to close multipart part for %q: %v\n", partToClose.FileName(), closeErr)
-			}
-		}(part)
+		defer part.Close()
 
 		if part.FileName() == "" {
-			// Skip non-file parts
-			continue
+			continue // Skip non-file parts
 		}
 
+		// Read file content
 		var fileContentBuf bytes.Buffer
 		n, copyErr := io.Copy(&fileContentBuf, part)
 		if copyErr != nil {
@@ -62,21 +57,31 @@ func (p *PersonalFileService) StoreFiles(ctx context.Context, user *model.User, 
 
 		fileSize := n
 		fileBytes := fileContentBuf.Bytes()
-
 		mimeType := http.DetectContentType(fileBytes)
 
-		fileReaderForStorage := bytes.NewReader(fileBytes)
+		// Build the file path in DB format
+		var fileDBPath string
+		if folderPath == "" {
+			fileDBPath = part.FileName() // Root folder
+		} else {
+			fileDBPath = p.converter.JoinDBPath(folderPath, part.FileName())
+		}
 
-		dstPath, hash, _, err := p.sto.SaveFile(user.Username, folderPath, part.FileName(), fileReaderForStorage)
+		// Save to storage
+		fileReaderForStorage := bytes.NewReader(fileBytes)
+		_, hash, _, err := p.sto.SaveFile(user.Username, folderPath, part.FileName(), fileReaderForStorage)
 		if err != nil {
 			return fmt.Errorf("failed to save file %q to storage: %w", part.FileName(), err)
 		}
+
+		// Store in database with DB path format
 		if _, err := p.repo.Insert(ctx,
-			filepath.Base(part.FileName()),
-			mimeType, dstPath,
-			hash, // Use hash from storage (or `fileHash` if you prefer service to own it)
+			part.FileName(),
+			mimeType,
+			fileDBPath, // Store relative path in DB
+			hash,
 			user.ID,
-			fileSize, // Use size from storage (or `fileSize` if you prefer service to own it)
+			fileSize,
 			folderID,
 		); err != nil {
 			return fmt.Errorf("failed to insert file record for %q into database: %w", part.FileName(), err)

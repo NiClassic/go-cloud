@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/NiClassic/go-cloud/internal/path"
 	"net/http"
 	"os"
 
@@ -45,14 +46,15 @@ func main() {
 	}(dbConn)
 
 	st := storage.NewIOStorage(os.Getenv("DATA_ROOT"))
+	converter := path.New(os.Getenv("DATA_ROOT"))
 
-	services := service.InitServices(dbConn, st)
+	services := service.InitServices(dbConn, st, converter)
 	renderer, err := handler.NewRenderer(cfg)
 	if err != nil {
 		logger.Fatal("could not initialize renderer: %v", err)
 	}
 
-	mux := handler.New(cfg, renderer, services, st)
+	mux := handler.New(cfg, renderer, services, st, converter)
 
 	logger.Info("DebugMode:          %v", cfg.DebugMode)
 	logger.Info("AllowRegistrations: %v", cfg.AllowRegistrations)

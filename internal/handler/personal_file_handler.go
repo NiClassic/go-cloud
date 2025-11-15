@@ -5,10 +5,10 @@ import (
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/model"
+	"github.com/NiClassic/go-cloud/internal/path"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -27,10 +27,11 @@ type PersonalFileUploadHandler struct {
 	sto           storage.FileManager
 	fileService   *service.PersonalFileService
 	folderService *service.FolderService
+	converter     *path.Converter
 }
 
-func NewPersonalFileUploadHandler(cfg *config.Config, r *Renderer, sto storage.FileManager, fileService *service.PersonalFileService, folderService *service.FolderService) *PersonalFileUploadHandler {
-	return &PersonalFileUploadHandler{newBaseHandler(cfg, r), sto, fileService, folderService}
+func NewPersonalFileUploadHandler(cfg *config.Config, r *Renderer, sto storage.FileManager, fileService *service.PersonalFileService, folderService *service.FolderService, c *path.Converter) *PersonalFileUploadHandler {
+	return &PersonalFileUploadHandler{newBaseHandler(cfg, r), sto, fileService, folderService, c}
 }
 
 func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
@@ -47,7 +48,7 @@ func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
 	return rows
 }
 
-func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder, username string) []fileRow {
+func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fileRow {
 	rows := make([]fileRow, len(folders))
 	for i, f := range folders {
 		rows[i] = fileRow{
@@ -56,7 +57,7 @@ func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder, usern
 			Size:      "—",
 			Id:        f.ID,
 			IsDir:     true,
-			Path:      strings.TrimPrefix(strings.Trim(f.Path, "/"), username),
+			Path:      p.converter.ToURLPath(f.Path),
 		}
 	}
 	return rows
@@ -79,19 +80,19 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	folderPath := strings.TrimPrefix(r.URL.Path, "/files")
-	folderPath = strings.TrimSuffix(folderPath, "/")
-	if folderPath == "" {
-		folderPath = "/"
-	}
+	// Extract path from URL
+	urlPath := r.URL.Path
+	dbPath := p.converter.FromURLPath(urlPath)
 
-	folder, err := p.folderService.GetByPath(r.Context(), user.ID, user.Username, folderPath)
+	// Get folder from database
+	folder, err := p.folderService.GetByPath(r.Context(), user.ID, user.Username, dbPath)
 	if err != nil {
 		logger.Error("could not get folder: %v", err)
 		http.Redirect(w, r, "/files/", http.StatusSeeOther)
 		return
 	}
 
+	// Get folder contents
 	folders, files, err := p.folderService.GetFolderContents(r.Context(), user.ID, folder.ID)
 	if err != nil {
 		logger.Error("could not get folder content: %v", err)
@@ -99,40 +100,17 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	parts := strings.Split(strings.Trim(strings.TrimPrefix(folder.Path, user.Username), "/"), "/")
-	var m []breadCrumbItem
-	if len(parts) == 1 && parts[0] == "" {
-		m = []breadCrumbItem{{
-			Name:    "Home",
-			Path:    "/",
-			Current: true,
-		}}
-	} else {
-		m = make([]breadCrumbItem, len(parts)+1)
-		m[0] = breadCrumbItem{
-			Name:    "Home",
-			Path:    "/",
-			Current: false,
-		}
-		cur := "/"
-		for i, p := range parts {
-			cur = cur + p + "/"
-			m[i+1] = breadCrumbItem{
-				Name:    p,
-				Path:    cur,
-				Current: i == len(parts)-1,
-			}
-		}
-	}
+	// Generate breadcrumbs
+	breadcrumbs := p.converter.GetBreadcrumbs(dbPath)
 
 	p.r.Render(w, true, PersonalFilePage, "Your Files", map[string]any{
 		"Files":               p.filesToRows(files),
-		"Folders":             p.foldersToRows(folders, user.Username),
+		"Folders":             p.foldersToRows(folders),
 		"CurrentFolderID":     folder.ID,
-		"CurrentFolderPath":   folder.Path,
+		"CurrentFolderPath":   dbPath, // Store as DB path
 		"CurrentFolderName":   folder.Name,
-		"Breadcrumbs":         m,
-		"LastBreadcrumbIndex": len(m) - 1,
+		"Breadcrumbs":         breadcrumbs,
+		"LastBreadcrumbIndex": len(breadcrumbs) - 1,
 	})
 }
 
@@ -156,26 +134,26 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	folderPath := strings.TrimPrefix(r.URL.Path, "/files/upload/")
-	folderPath = strings.TrimPrefix(folderPath, user.Username)
-	folderPath = strings.TrimSuffix(folderPath, "/")
-	if folderPath == "" {
-		folderPath = "/"
-	}
+	// Extract path from URL and convert to DB format
+	urlPath := strings.TrimPrefix(r.URL.Path, "/files/upload")
+	dbPath := p.converter.FromURLPath(urlPath)
 
-	folder, err := p.folderService.GetByPath(r.Context(), user.ID, user.Username, folderPath)
+	// Get folder from database
+	folder, err := p.folderService.GetByPath(r.Context(), user.ID, user.Username, dbPath)
 	if err != nil {
 		logger.Error("could not get folder: %v", err)
 		http.Error(w, "folder not found", http.StatusNotFound)
 		return
 	}
 
-	if err := p.fileService.StoreFiles(r.Context(), user, reader, folder.ID, folderPath); err != nil {
+	// Store files (pass DB path format)
+	if err := p.fileService.StoreFiles(r.Context(), user, reader, folder.ID, dbPath); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logger.Error("could not store files: %v", err)
 		return
 	}
 
+	// Get updated folder contents
 	folders, files, err := p.folderService.GetFolderContents(r.Context(), user.ID, folder.ID)
 	if err != nil {
 		logger.Error("could not get folder content: %v", err)
@@ -185,7 +163,7 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 
 	p.r.Render(w, true, FileRows, "", map[string]any{
 		"Files":   p.filesToRows(files),
-		"Folders": p.foldersToRows(folders, user.Username),
+		"Folders": p.foldersToRows(folders),
 	})
 }
 
@@ -197,52 +175,31 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 		return
 	}
 
-	suffix := strings.TrimPrefix(r.URL.Path, "/download/")
-	fileId, err := strconv.ParseInt(suffix, 10, 64)
-	if err != nil {
-		http.NotFound(w, r)
-		logger.Error("could not parse file id: %s", r.URL.Path)
-		return
-	}
-
-	file, err := p.fileService.GetFileById(r.Context(), fileId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logger.Error("could not get file by id: %v", err)
-		return
-	}
-
 	user := ExtractUserOrRedirect(w, r)
 	if user == nil {
 		return
 	}
 
-	if file.UserID != user.ID {
-		http.NotFound(w, r)
-		logger.Error("user tried to access file that does not belong to them: %v", r.URL.Path)
-		return
-	}
-
-	f, err := os.Open(file.Location)
+	// Extract file ID from URL
+	idStr := strings.TrimPrefix(r.URL.Path, "/download/")
+	fileID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, "cannot open file", http.StatusInternalServerError)
-		logger.Error("could not open file: %v", err)
+		http.Error(w, "Invalid file ID", http.StatusBadRequest)
 		return
 	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			http.Error(w, "cannot close file", http.StatusInternalServerError)
-			logger.Error("could not close file: %v", err)
-			return
-		}
-	}(f)
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file.Name))
-	w.Header().Set("Content-Type", file.MimeType)
-	w.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
-	w.Header().Set("Cache-Control", "no-store")
-	http.ServeContent(w, r, file.Name, file.CreatedAt, f)
+	// Get file from database
+	file, err := p.fileService.GetFileById(r.Context(), fileID)
+	if err != nil || file.UserID != user.ID {
+		http.NotFound(w, r)
+		return
+	}
+
+	// File location is already the full filesystem path
+	// But we can use pathUtil to verify or rebuild if needed
+	fullPath := p.converter.GetFullFilePath(user.Username, file.Location)
+
+	http.ServeFile(w, r, fullPath)
 }
 
 func (p *PersonalFileUploadHandler) humanReadableSize(b int64) string {

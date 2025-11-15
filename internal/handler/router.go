@@ -3,16 +3,17 @@ package handler
 import (
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/middleware"
+	"github.com/NiClassic/go-cloud/internal/path"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
 	"net/http"
 )
 
-func New(cfg *config.Config, r *Renderer, services *service.Services, st storage.FileManager) *http.ServeMux {
+func New(cfg *config.Config, r *Renderer, services *service.Services, st storage.FileManager, c *path.Converter) *http.ServeMux {
 	authH := NewAuthHandler(cfg, r, services.Auth, services.Folder, st)
 	rootH := NewRootHandler(services.Auth)
 	uploadH := NewUploadLinkHandler(cfg, r, services.UploadLink, services.LinkUnlock)
-	pFileH := NewPersonalFileUploadHandler(cfg, r, st, services.PFile, services.Folder)
+	pFileH := NewPersonalFileUploadHandler(cfg, r, st, services.PFile, services.Folder, c)
 	folderH := NewFolderHandler(cfg, r, services.Folder, services.PFile)
 
 	mux := http.NewServeMux()

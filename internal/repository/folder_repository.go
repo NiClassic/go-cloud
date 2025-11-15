@@ -53,6 +53,17 @@ func (r *FolderRepository) GetByPath(ctx context.Context, path string) (*model.F
 	return &f, nil
 }
 
+func (r *FolderRepository) GetByPathAndUser(ctx context.Context, path string, userID int64) (*model.Folder, error) {
+	const q = `SELECT id, user_id, parent_id, name, path, created_at, updated_at FROM folders WHERE path = ? AND user_id = ?`
+	var f model.Folder
+	if err := r.db.QueryRowContext(ctx, q, path, userID).Scan(
+		&f.ID, &f.UserID, &f.ParentID, &f.Name, &f.Path, &f.CreatedAt, &f.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return &f, nil
+}
+
 func (r *FolderRepository) GetByUser(ctx context.Context, userID int64) ([]*model.Folder, error) {
 	const q = `SELECT id, user_id, parent_id, name, path, created_at, updated_at
 	FROM folders WHERE user_id = ? AND parent_id IS NULL ORDER BY name`

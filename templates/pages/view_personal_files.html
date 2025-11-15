@@ -52,7 +52,7 @@
 
     <div id="breadcrumbs">
         {{ range $idx, $el := .Breadcrumbs }}
-        <a href="/files{{ $el.Path }}" class="{{ if $el.Current }}current-breadcrumb{{ end }}">{{ $el.Name }}</a>
+        <a href="/files{{ $el.Path }}" class="{{ if $el.IsLast }}current-breadcrumb{{ end }}">{{ $el.Name }}</a>
         {{ if ne $idx $.LastBreadcrumbIndex }}
         <i class="material-icons">chevron_right</i>
         {{end}}
