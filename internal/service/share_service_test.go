@@ -6,6 +6,7 @@ import (
 	"github.com/NiClassic/go-cloud/internal/repository"
 	"github.com/NiClassic/go-cloud/internal/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -217,6 +218,93 @@ func TestFileShareService_GetByID(t *testing.T) {
 	}
 }
 
+func TestFileShareService_GetSharedFilesForRecipient(t *testing.T) {
+	ctx := testutil.TestContext(t)
+	db := testutil.SetupTestDB(t)
+
+	userRepo := repository.NewUserRepository(db)
+	fileRepo := repository.NewPersonalFileRepository(db)
+	folderRepo := repository.NewFolderRepository(db)
+	shareRepo := repository.NewFileShareRepositoryImpl(db)
+	svc := NewFileShareService(*fileRepo, shareRepo)
+
+	ownerID := testutil.InsertTestUser(t, "bob", userRepo)
+	recipientID := testutil.InsertTestUser(t, "alice", userRepo)
+	otherRecipientID := testutil.InsertTestUser(t, "candice", userRepo)
+	folderID := testutil.InsertTestFolder(t, ownerID, "documents", folderRepo)
+	file1ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", fileRepo)
+	file2ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff2.txt", fileRepo)
+	file3ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff3.txt", fileRepo)
+
+	future := time.Now().Add(24 * time.Hour)
+	past := time.Now().Add(-1 * time.Hour)
+
+	err := shareRepo.Create(ctx, &model.FileShare{FileID: file1ID, SharedWithID: recipientID, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: future}})
+	assert.NoError(t, err)
+	err = shareRepo.Create(ctx, &model.FileShare{FileID: file2ID, SharedWithID: recipientID, Permission: "write", ExpiresAt: sql.NullTime{Valid: false}})
+	assert.NoError(t, err)
+
+	err = shareRepo.Create(ctx, &model.FileShare{FileID: file3ID, SharedWithID: recipientID, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: past}})
+	assert.NoError(t, err)
+
+	err = shareRepo.Create(ctx, &model.FileShare{FileID: file1ID, SharedWithID: otherRecipientID, Permission: "read"})
+	assert.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		userID  int64
+		want    []repository.SharedFile
+		wantErr bool
+	}{
+		{
+			name:   "gets non-expired shares for recipient",
+			userID: recipientID,
+			want: []repository.SharedFile{
+				{ID: file1ID, Name: "somestuff.txt", Size: 1024},
+				{ID: file2ID, Name: "somestuff2.txt", Size: 1024},
+			},
+		},
+		{
+			name:   "user with no shares gets empty slice",
+			userID: recipientID,
+			want:   []repository.SharedFile{},
+		},
+		{
+			name:   "non-existent user gets empty slice",
+			userID: 99999,
+			want:   []repository.SharedFile{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := svc.GetSharedFiles(ctx, tt.userID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			hasErrors := false
+			for _, want := range tt.want {
+				wantID := want.ID
+				hasBeenSeen := false
+				for _, got := range got {
+					if wantID != got.ID {
+						continue
+					}
+					hasBeenSeen = true
+					assert.Equal(t, want.Size, got.Size)
+					assert.Equal(t, want.Name, got.Name)
+				}
+				if !hasBeenSeen {
+					hasErrors = true
+				}
+			}
+			assert.False(t, hasErrors)
+		})
+	}
+}
 func TestFileShareService_Delete(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	ctx := testutil.TestContext(t)

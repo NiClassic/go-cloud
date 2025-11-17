@@ -4,13 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"github.com/NiClassic/go-cloud/internal/model"
+	"time"
 )
 
 type FileShareRepository interface {
 	Create(ctx context.Context, fs *model.FileShare) error
 	GetByRecipient(ctx context.Context, userID int64) ([]model.FileShare, error)
+	GetSharedFilesForRecipient(ctx context.Context, userID int64) ([]SharedFile, error)
 	GetByID(ctx context.Context, fileShareID int64) (*model.FileShare, error)
 	Delete(ctx context.Context, id int64) error
+}
+
+type SharedFile struct {
+	ID        int64
+	Name      string
+	CreatedAt time.Time
+	Size      int64
 }
 
 type FileShareRepositoryImpl struct {
@@ -63,6 +72,31 @@ func (r *FileShareRepositoryImpl) GetByID(ctx context.Context, shareID int64) (*
 	}
 	return &s, nil
 }
+
+func (r *FileShareRepositoryImpl) GetSharedFilesForRecipient(ctx context.Context, userID int64) ([]SharedFile, error) {
+	query := `
+        SELECT f.ID, f.name, f.created_at, f.size
+        FROM file_shares s
+        JOIN files f ON s.file_id = f.id
+        WHERE s.shared_with_id = ? 
+          AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))`
+
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var shares []SharedFile
+	for rows.Next() {
+		var s SharedFile
+		if err = rows.Scan(&s.ID, &s.Name, &s.CreatedAt, &s.Size); err != nil {
+			return nil, err
+		}
+		shares = append(shares, s)
+	}
+	return shares, nil
+}
+
 func (r *FileShareRepositoryImpl) Delete(ctx context.Context, id int64) error {
 	const q = `DELETE FROM file_shares WHERE id = ?`
 	_, err := r.db.ExecContext(ctx, q, id)

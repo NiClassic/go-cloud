@@ -56,6 +56,10 @@ func (s *FileShareService) GetByRecipient(ctx context.Context, userID int64) ([]
 	return s.fileShareRepo.GetByRecipient(ctx, userID)
 }
 
+func (s *FileShareService) GetSharedFiles(ctx context.Context, userID int64) ([]repository.SharedFile, error) {
+	return s.fileShareRepo.GetSharedFilesForRecipient(ctx, userID)
+}
+
 func (s *FileShareService) GetByID(ctx context.Context, requestingUserID, fileShareID int64) (*model.FileShare, error) {
 	share, err := s.fileShareRepo.GetByID(ctx, fileShareID)
 	if err != nil {
