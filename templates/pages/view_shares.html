@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} | Go-Cloud</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+</head>
+
+<body class="files-body">
+{{ template "header" . }}
+
+<main>
+    <div>
+        <div id="file-list">
+            <table>
+                <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Uploaded</th>
+                    <th>Size</th>
+                </tr>
+                </thead>
+                <tbody id="file-rows">
+                {{ range .Files }}
+                <tr onclick="window.open('/download/{{ .ID }}', '_blank')">
+                    <td>
+                        <div>
+                            <i class="material-icons">description</i>
+                            <span>{{ .Name }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {{ formatSmart .CreatedAt }}
+                    </td>
+                    <td>{{ .Size }}</td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{{ template "footer" . }}
+</body>
+</html>

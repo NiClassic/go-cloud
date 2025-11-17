@@ -15,6 +15,7 @@ func New(cfg *config.Config, r *Renderer, services *service.Services, st storage
 	uploadH := NewUploadLinkHandler(cfg, r, services.UploadLink, services.LinkUnlock)
 	pFileH := NewPersonalFileUploadHandler(cfg, r, st, services.PFile, services.Folder, c)
 	folderH := NewFolderHandler(cfg, r, services.Folder, services.PFile)
+	shareH := NewFileShareHandler(cfg, r, services.FileShare)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -31,6 +32,8 @@ func New(cfg *config.Config, r *Renderer, services *service.Services, st storage
 	mux.Handle("/links/create", middleware.Recover(auth.WithAuth(http.HandlerFunc(uploadH.CreateUploadLink))))
 	mux.Handle("/links", middleware.Recover(auth.WithAuth(http.HandlerFunc(uploadH.ShowLinks))))
 	mux.Handle("/links/", middleware.Recover(auth.WithAuth(http.HandlerFunc(uploadH.VisitUploadLink))))
+
+	mux.Handle("/shares", middleware.Recover(auth.WithAuth(http.HandlerFunc(shareH.GetSharedWithUser))))
 
 	// File management routes
 	mux.Handle("/files", middleware.Recover(auth.WithAuth(http.HandlerFunc(pFileH.RedirectNoTrailingSlash))))

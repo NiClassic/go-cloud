@@ -28,6 +28,7 @@ const (
 	RegisterPage
 	DashboardPage
 	PersonalFilePage
+	SharePage
 	FileRows
 	LinkSharePage
 	LinkSharePasswordPage
@@ -69,6 +70,8 @@ func pageToTemplateName(template Template) string {
 		return "view_dashboard.html"
 	case PersonalFilePage:
 		return "view_personal_files.html"
+	case SharePage:
+		return "view_shares.html"
 	case FileRows:
 		return "file_rows"
 	case LinkSharePage:

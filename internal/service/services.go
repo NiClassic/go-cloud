@@ -13,6 +13,7 @@ type Services struct {
 	LinkUnlock *LinkUnlockService
 	PFile      *PersonalFileService
 	Folder     *FolderService
+	FileShare  *FileShareService
 }
 
 // InitServices wires all services and repositories together. It is the main
@@ -24,12 +25,14 @@ func InitServices(db *sql.DB, st storage.FileManager, c *path.Converter) *Servic
 	linkUnlockRepo := repository.NewLinkUnlockRepository(db)
 	fileRepo := repository.NewPersonalFileRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
+	fileShareRepo := repository.NewFileShareRepositoryImpl(db)
 
 	authSvc := NewAuthService(userRepo, sessRepo)
 	linkSvc := NewUploadLinkService(linkRepo)
 	linkUnlockSvc := NewLinkUnlockService(linkUnlockRepo)
 	folderSvc := NewFolderService(folderRepo, fileRepo, st, c)
 	pFileSvc := NewPersonalFileService(st, fileRepo, c)
+	fileShareSvc := NewFileShareService(*fileRepo, fileShareRepo)
 
 	return &Services{
 		Auth:       authSvc,
@@ -37,5 +40,6 @@ func InitServices(db *sql.DB, st storage.FileManager, c *path.Converter) *Servic
 		LinkUnlock: linkUnlockSvc,
 		PFile:      pFileSvc,
 		Folder:     folderSvc,
+		FileShare:  fileShareSvc,
 	}
 }
