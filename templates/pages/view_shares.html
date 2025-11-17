@@ -13,10 +13,10 @@
 {{ template "header" . }}
 
 <main>
-    <div>
-        <div id="file-list">
+        <div id="share-list">
             <table>
                 <colgroup>
+                    <col>
                     <col>
                     <col>
                     <col>
@@ -26,6 +26,7 @@
                     <th>Name</th>
                     <th>Uploaded</th>
                     <th>Size</th>
+                    <th>Shared By</th>
                 </tr>
                 </thead>
                 <tbody id="file-rows">
@@ -40,13 +41,13 @@
                     <td>
                         {{ formatSmart .CreatedAt }}
                     </td>
-                    <td>{{ .Size }}</td>
+                    <td>{{ humanReadableSize .Size }}</td>
+                    <td>{{ .SharedByName }} </td>
                 </tr>
                 {{ end }}
                 </tbody>
             </table>
         </div>
-    </div>
 </main>
 {{ template "footer" . }}
 </body>

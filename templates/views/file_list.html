@@ -25,7 +25,7 @@
     <td>
         {{ formatSmart .CreatedAt }}
     </td>
-    <td>{{ .Size }}</td>
+    <td>{{ humanReadableSize .Size }}</td>
 </tr>
 {{ end }}
 {{ end }}

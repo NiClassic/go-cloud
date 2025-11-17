@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"html/template"
 	"time"
 
@@ -34,6 +35,21 @@ func GetTemplateFunctions() template.FuncMap {
 		},
 		"formatDatetimeLocal": func(t time.Time) string {
 			return timezone.TZ.FormatForDatetimeLocal(t)
+		},
+		"humanReadableSize": func(b int64) string {
+			if b == -1 {
+				return "-"
+			}
+			const unit = 1024
+			if b < unit {
+				return fmt.Sprintf("%d B", b)
+			}
+			div, exp := int64(unit), 0
+			for n := b / unit; n >= unit; n /= unit {
+				div *= unit
+				exp++
+			}
+			return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
 		},
 		"toLocalTime": func(t time.Time) time.Time {
 			return timezone.TZ.ConvertToLocal(t)

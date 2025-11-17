@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/model"
@@ -17,7 +16,7 @@ import (
 type fileRow struct {
 	Name      string
 	CreatedAt time.Time
-	Size      string
+	Size      int64
 	Id        int64
 	IsDir     bool
 	Path      string
@@ -40,7 +39,7 @@ func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
 		rows[i] = fileRow{
 			Name:      f.Name,
 			CreatedAt: f.CreatedAt,
-			Size:      p.humanReadableSize(f.Size),
+			Size:      f.Size,
 			Id:        f.ID,
 			IsDir:     false,
 		}
@@ -54,7 +53,7 @@ func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fil
 		rows[i] = fileRow{
 			Name:      f.Name,
 			CreatedAt: f.CreatedAt,
-			Size:      "—",
+			Size:      -1,
 			Id:        f.ID,
 			IsDir:     true,
 			Path:      p.converter.ToURLPath(f.Path),
@@ -200,17 +199,4 @@ func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.
 	fullPath := p.converter.GetFullFilePath(user.Username, file.Location)
 
 	http.ServeFile(w, r, fullPath)
-}
-
-func (p *PersonalFileUploadHandler) humanReadableSize(b int64) string {
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
 }

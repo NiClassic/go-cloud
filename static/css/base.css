@@ -386,6 +386,60 @@ form input:focus {
     cursor: pointer;
 }
 
+#share-list {
+    width: 100%;
+    overflow-x: auto;
+    padding: 0.5rem;
+}
+
+#share-list table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+#share-list th,
+#share-list td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.75rem;
+    white-space: nowrap;
+}
+
+#share-list th {
+    color: var(--color-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+#share-list  col:nth-child(1) {
+    width: 70%;
+}
+#share-list col:nth-child(2),
+#share-list col:nth-child(3),
+#share-list col:nth-child(4) {
+    width: 10%;
+}
+
+#share-list td:first-child {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#share-list td:first-child div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#share-list tr div {
+    cursor: pointer;
+}
+
 @media (max-width: 640px) {
     #file-list th:nth-child(3),
     #file-list td:nth-child(3) {
@@ -398,6 +452,25 @@ form input:focus {
 
     #file-list td:nth-child(2) {
         width: 30%;
+        text-align: right;
+    }
+
+    #share-list th:nth-child(3),
+    #share-list td:nth-child(3) {
+        display: none; /* hide size column on mobile */
+    }
+
+    #share-list td:first-child {
+        width: 70%;
+    }
+
+    #share-list td:nth-child(2) {
+        width: 15%;
+        text-align: right;
+    }
+
+    #share-list td:nth-child(4) {
+        width: 15%;
         text-align: right;
     }
 }
