@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"database/sql"
+	"github.com/NiClassic/go-cloud/internal/repository"
 	"os"
 	"path/filepath"
 	"testing"
@@ -75,4 +76,30 @@ func CreateTestFile(t *testing.T, dir, name, content string) string {
 	}
 
 	return filePath
+}
+func InsertTestUser(t *testing.T, username string, r *repository.UserRepository) int64 {
+	t.Helper()
+	id, err := r.Insert(TestContext(t), username, "somepass")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func InsertTestFolder(t *testing.T, userID int64, name string, r *repository.FolderRepository) int64 {
+	t.Helper()
+	id, err := r.Insert(TestContext(t), userID, nil, name, "someuser/"+name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func InsertTestFile(t *testing.T, userID int64, parentID int64, name string, r *repository.PersonalFileRepository) int64 {
+	t.Helper()
+	id, err := r.Insert(TestContext(t), name, "text/plain", "someuser"+name, "somehash", userID, 1024, parentID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
 }

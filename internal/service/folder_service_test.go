@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"github.com/NiClassic/go-cloud/internal/path"
 	"testing"
 
 	"github.com/NiClassic/go-cloud/internal/repository"
@@ -20,8 +21,9 @@ func setupFolderTest(t *testing.T) (*service.FolderService, int64, string, strin
 	folderRepo := repository.NewFolderRepository(db)
 	fileRepo := repository.NewPersonalFileRepository(db)
 	st := storage.NewIOStorage(tmpDir)
+	c := path.New(tmpDir)
 
-	folderSvc := service.NewFolderService(folderRepo, fileRepo, st)
+	folderSvc := service.NewFolderService(folderRepo, fileRepo, st, c)
 
 	// Create a test user
 	userID, err := userRepo.Insert(ctx, "testuser", "hashedpass")

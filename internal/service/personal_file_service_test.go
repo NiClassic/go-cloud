@@ -3,6 +3,7 @@ package service_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/NiClassic/go-cloud/internal/path"
 	"io"
 	"mime/multipart"
 	"net/textproto"
@@ -26,9 +27,10 @@ func setupPersonalFileTest(t *testing.T) (*service.PersonalFileService, *service
 	fileRepo := repository.NewPersonalFileRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
 	st := storage.NewIOStorage(tmpDir)
+	c := path.New(tmpDir)
 
-	fileSvc := service.NewPersonalFileService(st, fileRepo)
-	folderSvc := service.NewFolderService(folderRepo, fileRepo, st)
+	fileSvc := service.NewPersonalFileService(st, fileRepo, c)
+	folderSvc := service.NewFolderService(folderRepo, fileRepo, st, c)
 
 	// Create a test user
 	userID, err := userRepo.Insert(ctx, "testuser", "hashedpass")
