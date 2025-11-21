@@ -12,20 +12,15 @@ import (
 )
 
 func TestFileShareService_CreateFileShare(t *testing.T) {
-	db := testutil.SetupTestDB(t)
-	ctx := testutil.TestContext(t)
+	deps := testutil.NewTestDeps(t)
 
-	userRepo := repository.NewUserRepository(db)
-	folderRepo := repository.NewFolderRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
-	shareRepo := repository.NewFileShareRepositoryImpl(db)
-	svc := NewFileShareService(*fileRepo, shareRepo)
+	svc := NewFileShareService(*deps.File, deps.Share)
 
-	ownerID := testutil.InsertTestUser(t, "bob", userRepo)
-	recipientID := testutil.InsertTestUser(t, "alice", userRepo)
-	otherRecipientID := testutil.InsertTestUser(t, "candice", userRepo)
-	folderID := testutil.InsertTestFolder(t, ownerID, "documents", folderRepo)
-	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", fileRepo)
+	ownerID := testutil.InsertTestUser(t, "bob", deps.User)
+	recipientID := testutil.InsertTestUser(t, "alice", deps.User)
+	otherRecipientID := testutil.InsertTestUser(t, "candice", deps.User)
+	folderID := testutil.InsertTestFolder(t, ownerID, "documents", deps.Folder)
+	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", deps.File)
 
 	// Expired time for table
 	expiredTime := time.Now().Add(1 * time.Hour)
@@ -84,7 +79,7 @@ func TestFileShareService_CreateFileShare(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateFileShare(ctx, tt.ownerID, tt.fileID, tt.recipientID, tt.perm, tt.expires)
+			_, err := svc.CreateFileShare(deps.Ctx, tt.ownerID, tt.fileID, tt.recipientID, tt.perm, tt.expires)
 
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -92,33 +87,28 @@ func TestFileShareService_CreateFileShare(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			shares, _ := shareRepo.GetByRecipient(ctx, tt.recipientID)
+			shares, _ := deps.Share.GetByRecipient(deps.Ctx, tt.recipientID)
 			assert.Len(t, shares, tt.wantCount)
 		})
 	}
 
 	t.Run("duplicate share second call fails", func(t *testing.T) {
-		_, err := svc.CreateFileShare(ctx, ownerID, fileID, recipientID, "read", nil)
+		_, err := svc.CreateFileShare(deps.Ctx, ownerID, fileID, recipientID, "read", nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "UNIQUE")
 	})
 }
 
 func TestFileShareService_GetByRecipient(t *testing.T) {
-	db := testutil.SetupTestDB(t)
-	ctx := testutil.TestContext(t)
+	deps := testutil.NewTestDeps(t)
 
-	userRepo := repository.NewUserRepository(db)
-	folderRepo := repository.NewFolderRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
-	shareRepo := repository.NewFileShareRepositoryImpl(db)
-	svc := NewFileShareService(*fileRepo, shareRepo)
+	svc := NewFileShareService(*deps.File, deps.Share)
 
-	ownerID := testutil.InsertTestUser(t, "bob", userRepo)
-	recipientID := testutil.InsertTestUser(t, "alice", userRepo)
-	otherRecipientID := testutil.InsertTestUser(t, "candice", userRepo)
-	folderID := testutil.InsertTestFolder(t, ownerID, "documents", folderRepo)
-	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", fileRepo)
+	ownerID := testutil.InsertTestUser(t, "bob", deps.User)
+	recipientID := testutil.InsertTestUser(t, "alice", deps.User)
+	otherRecipientID := testutil.InsertTestUser(t, "candice", deps.User)
+	folderID := testutil.InsertTestFolder(t, ownerID, "documents", deps.Folder)
+	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", deps.File)
 
 	share := &model.FileShare{
 		FileID:       fileID,
@@ -126,7 +116,7 @@ func TestFileShareService_GetByRecipient(t *testing.T) {
 		Permission:   "read",
 		ExpiresAt:    sql.NullTime{Valid: false},
 	}
-	err := shareRepo.Create(ctx, share)
+	err := deps.Share.Create(deps.Ctx, share)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -151,7 +141,7 @@ func TestFileShareService_GetByRecipient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shares, err := svc.GetByRecipient(ctx, tt.recipientID)
+			shares, err := svc.GetByRecipient(deps.Ctx, tt.recipientID)
 
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -170,20 +160,15 @@ func TestFileShareService_GetByRecipient(t *testing.T) {
 }
 
 func TestFileShareService_GetByID(t *testing.T) {
-	db := testutil.SetupTestDB(t)
-	ctx := testutil.TestContext(t)
+	deps := testutil.NewTestDeps(t)
 
-	userRepo := repository.NewUserRepository(db)
-	folderRepo := repository.NewFolderRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
-	shareRepo := repository.NewFileShareRepositoryImpl(db)
-	svc := NewFileShareService(*fileRepo, shareRepo)
+	svc := NewFileShareService(*deps.File, deps.Share)
 
-	ownerID := testutil.InsertTestUser(t, "bob", userRepo)
-	recipientID := testutil.InsertTestUser(t, "alice", userRepo)
-	otherRecipientID := testutil.InsertTestUser(t, "candice", userRepo)
-	folderID := testutil.InsertTestFolder(t, ownerID, "documents", folderRepo)
-	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", fileRepo)
+	ownerID := testutil.InsertTestUser(t, "bob", deps.User)
+	recipientID := testutil.InsertTestUser(t, "alice", deps.User)
+	otherRecipientID := testutil.InsertTestUser(t, "candice", deps.User)
+	folderID := testutil.InsertTestFolder(t, ownerID, "documents", deps.Folder)
+	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", deps.File)
 
 	share := &model.FileShare{
 		FileID:       fileID,
@@ -191,7 +176,7 @@ func TestFileShareService_GetByID(t *testing.T) {
 		Permission:   "read",
 		ExpiresAt:    sql.NullTime{Valid: false},
 	}
-	err := shareRepo.Create(ctx, share)
+	err := deps.Share.Create(deps.Ctx, share)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -207,7 +192,7 @@ func TestFileShareService_GetByID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s, err := svc.GetByID(ctx, tt.requester, tt.shareID)
+			s, err := svc.GetByID(deps.Ctx, tt.requester, tt.shareID)
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
 			} else {
@@ -219,35 +204,30 @@ func TestFileShareService_GetByID(t *testing.T) {
 }
 
 func TestFileShareService_GetSharedFilesForRecipient(t *testing.T) {
-	ctx := testutil.TestContext(t)
-	db := testutil.SetupTestDB(t)
+	deps := testutil.NewTestDeps(t)
 
-	userRepo := repository.NewUserRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
-	folderRepo := repository.NewFolderRepository(db)
-	shareRepo := repository.NewFileShareRepositoryImpl(db)
-	svc := NewFileShareService(*fileRepo, shareRepo)
+	svc := NewFileShareService(*deps.File, deps.Share)
 
-	ownerID := testutil.InsertTestUser(t, "bob", userRepo)
-	recipientID := testutil.InsertTestUser(t, "alice", userRepo)
-	otherRecipientID := testutil.InsertTestUser(t, "candice", userRepo)
-	folderID := testutil.InsertTestFolder(t, ownerID, "documents", folderRepo)
-	file1ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", fileRepo)
-	file2ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff2.txt", fileRepo)
-	file3ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff3.txt", fileRepo)
+	ownerID := testutil.InsertTestUser(t, "bob", deps.User)
+	recipientID := testutil.InsertTestUser(t, "alice", deps.User)
+	otherRecipientID := testutil.InsertTestUser(t, "candice", deps.User)
+	folderID := testutil.InsertTestFolder(t, ownerID, "documents", deps.Folder)
+	file1ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", deps.File)
+	file2ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff2.txt", deps.File)
+	file3ID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff3.txt", deps.File)
 
 	future := time.Now().Add(24 * time.Hour)
 	past := time.Now().Add(-1 * time.Hour)
 
-	err := shareRepo.Create(ctx, &model.FileShare{FileID: file1ID, SharedWithID: recipientID, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: future}})
+	err := deps.Share.Create(deps.Ctx, &model.FileShare{FileID: file1ID, SharedWithID: recipientID, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: future}})
 	assert.NoError(t, err)
-	err = shareRepo.Create(ctx, &model.FileShare{FileID: file2ID, SharedWithID: recipientID, Permission: "write", ExpiresAt: sql.NullTime{Valid: false}})
-	assert.NoError(t, err)
-
-	err = shareRepo.Create(ctx, &model.FileShare{FileID: file3ID, SharedWithID: recipientID, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: past}})
+	err = deps.Share.Create(deps.Ctx, &model.FileShare{FileID: file2ID, SharedWithID: recipientID, Permission: "write", ExpiresAt: sql.NullTime{Valid: false}})
 	assert.NoError(t, err)
 
-	err = shareRepo.Create(ctx, &model.FileShare{FileID: file1ID, SharedWithID: otherRecipientID, Permission: "read"})
+	err = deps.Share.Create(deps.Ctx, &model.FileShare{FileID: file3ID, SharedWithID: recipientID, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: past}})
+	assert.NoError(t, err)
+
+	err = deps.Share.Create(deps.Ctx, &model.FileShare{FileID: file1ID, SharedWithID: otherRecipientID, Permission: "read"})
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -278,7 +258,7 @@ func TestFileShareService_GetSharedFilesForRecipient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := svc.GetSharedFiles(ctx, tt.userID)
+			got, err := svc.GetSharedFiles(deps.Ctx, tt.userID)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -306,20 +286,15 @@ func TestFileShareService_GetSharedFilesForRecipient(t *testing.T) {
 	}
 }
 func TestFileShareService_Delete(t *testing.T) {
-	db := testutil.SetupTestDB(t)
-	ctx := testutil.TestContext(t)
+	deps := testutil.NewTestDeps(t)
 
-	userRepo := repository.NewUserRepository(db)
-	folderRepo := repository.NewFolderRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
-	shareRepo := repository.NewFileShareRepositoryImpl(db)
-	svc := NewFileShareService(*fileRepo, shareRepo)
+	svc := NewFileShareService(*deps.File, deps.Share)
 
-	ownerID := testutil.InsertTestUser(t, "bob", userRepo)
-	recipientID := testutil.InsertTestUser(t, "alice", userRepo)
-	otherRecipientID := testutil.InsertTestUser(t, "candice", userRepo)
-	folderID := testutil.InsertTestFolder(t, ownerID, "documents", folderRepo)
-	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", fileRepo)
+	ownerID := testutil.InsertTestUser(t, "bob", deps.User)
+	recipientID := testutil.InsertTestUser(t, "alice", deps.User)
+	otherRecipientID := testutil.InsertTestUser(t, "candice", deps.User)
+	folderID := testutil.InsertTestFolder(t, ownerID, "documents", deps.Folder)
+	fileID := testutil.InsertTestFile(t, ownerID, folderID, "somestuff.txt", deps.File)
 
 	share := &model.FileShare{
 		FileID:       fileID,
@@ -327,7 +302,7 @@ func TestFileShareService_Delete(t *testing.T) {
 		Permission:   "read",
 		ExpiresAt:    sql.NullTime{Valid: false},
 	}
-	err := shareRepo.Create(ctx, share)
+	err := deps.Share.Create(deps.Ctx, share)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -343,12 +318,12 @@ func TestFileShareService_Delete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteFileShare(ctx, tt.requester, tt.shareID)
+			err := svc.DeleteFileShare(deps.Ctx, tt.requester, tt.shareID)
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
 			} else {
 				assert.NoError(t, err)
-				shares, err := shareRepo.GetByRecipient(ctx, recipientID)
+				shares, err := deps.Share.GetByRecipient(deps.Ctx, recipientID)
 				assert.NoError(t, err)
 				assert.Len(t, shares, 0)
 			}

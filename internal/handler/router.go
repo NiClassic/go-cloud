@@ -13,7 +13,7 @@ func New(cfg *config.Config, r *Renderer, services *service.Services, st storage
 	authH := NewAuthHandler(cfg, r, services.Auth, services.Folder, st)
 	rootH := NewRootHandler(services.Auth)
 	uploadH := NewUploadLinkHandler(cfg, r, services.UploadLink, services.LinkUnlock)
-	pFileH := NewPersonalFileUploadHandler(cfg, r, st, services.PFile, services.Folder, c)
+	pFileH := NewPersonalFileUploadHandler(cfg, r, st, services.PFile, services.Folder, services.FileShare, c)
 	folderH := NewFolderHandler(cfg, r, services.Folder, services.PFile)
 	shareH := NewFileShareHandler(cfg, r, services.FileShare)
 
