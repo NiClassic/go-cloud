@@ -333,123 +333,51 @@ form input:focus {
     color: var(--color-brand-500) !important;
 }
 
-#file-list {
-    width: 100%;
-    overflow-x: auto;
-    padding: 0.5rem;
-}
-
-#file-list table {
+table {
     width: 100%;
     border-collapse: collapse;
-    text-align: left;
     font-size: 0.95rem;
+    text-align: left;
 }
 
-#file-list th,
-#file-list td {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    padding-top: 0.75rem;
+.material-icons {
+    vertical-align: middle;
+}
+
+thead {
+    color: var(--color-muted);
+}
+
+th,
+td {
+    padding: 0.75rem 1.25rem;
     white-space: nowrap;
 }
 
-#file-list th {
-    color: var(--color-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
+tbody tr:hover {
+    background: #f1f5f9;
+    cursor: pointer;
 }
 
-#file-list col:nth-child(1) {
-    width: 80%;
-}
-#file-list col:nth-child(2),
-#file-list col:nth-child(3) {
-    width: 10%;
-}
-
-#file-list td:first-child {
+col.primary-field,
+th.primary-field,
+td.primary-field {
+    width: 100%;
     max-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-#file-list td:first-child div {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-#file-list tr div {
-    cursor: pointer;
-}
-
-#share-list {
-    overflow-x: hidden;
-    padding: 0.5rem;
-}
-
-#share-list table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#share-list th {
-    color: var(--color-muted);
-}
-
-#share-list th, #share-list td {
-    padding: .75rem 1.25rem;
-    text-align: left;
-    /*border-bottom: 1px solid #e2e8f0;*/
-    border: none;
-    white-space: nowrap;
-}
-
-#share-list #share-list td.share-name-col, #share-list th.share-name-col {
-    max-width: 1px;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.material-icons {
-    vertical-align: middle;
-    font-size: 1.125rem;
-}
-
-#share-list tbody tr:hover {
-    background: #f1f5f9;
-    cursor: pointer;
-}
-
 @media (max-width: 640px) {
-    #file-list th:nth-child(3),
-    #file-list td:nth-child(3) {
+    thead th:not(.primary-field):not(.mobile-visible),
+    tbody td:not(.primary-field):not(.mobile-visible) {
         display: none;
     }
 
-    #file-list td:first-child {
-        width: 70%;
-    }
-
-    #file-list td:nth-child(2) {
-        width: 30%;
-        text-align: right;
-    }
-
-    #share-list th.share-name-col   { width: 70%; }
-    #share-list th.share-expires-col { width: 30%; }
-
-    #share-list th:not(.share-name-col):not(.share-expires-col),
-    #share-list td:not(.share-name-col):not(.share-expires-col) {
-        display: none;
-    }
-
-    #share-list thead tr {
+    thead tr,
+    tbody tr {
         display: table-row;
     }
 }
+

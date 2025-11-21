@@ -1,31 +1,31 @@
 {{ define "file_rows" }}
 {{ range .Folders }}
 <tr onclick="location.href='/files/{{ .Path }}'">
-    <td>
+    <td class="primary-field">
         <div>
             <i class="material-icons">folder</i>
             <span>{{ .Name }}</span>
         </div>
     </td>
-    <td>
+    <td class="mobile-visible">
         {{ formatSmart .CreatedAt }}
     </td>
-    <td>—</td>
+    <td class="mobile-visible">—</td>
 </tr>
 {{ end }}
 
 {{ range .Files }}
 <tr onclick="window.open('/download/{{ .Id }}', '_blank')">
-    <td>
+    <td class="primary-field">
         <div>
             <i class="material-icons">description</i>
             <span>{{ .Name }}</span>
         </div>
     </td>
-    <td>
+    <td class="mobile-visible">
         {{ formatSmart .CreatedAt }}
     </td>
-    <td>{{ humanReadableSize .Size }}</td>
+    <td class="mobile-visible">{{ humanReadableSize .Size }}</td>
 </tr>
 {{ end }}
 {{ end }}
