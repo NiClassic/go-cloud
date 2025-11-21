@@ -15,34 +15,32 @@
 <main>
         <div id="share-list">
             <table>
-                <colgroup>
-                    <col>
-                    <col>
-                    <col>
-                    <col>
-                </colgroup>
                 <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Uploaded</th>
-                    <th>Size</th>
-                    <th>Shared By</th>
+                    <th class="share-name-col">Name</th>
+                    <th class="desktop-only">Uploaded</th>
+                    <th class="desktop-only">Size</th>
+                    <th class="desktop-only">Shared By</th>
+                    <th class="desktop-only">Permission</th>
+                    <th class="share-expires-col">Expires at</th>
                 </tr>
                 </thead>
-                <tbody id="file-rows">
+                <tbody id="share-list-body">
                 {{ range .Files }}
-                <tr onclick="window.open('/download/{{ .ID }}', '_blank')">
-                    <td>
+                <tr class="share-list-item" onclick="window.open('/download/{{ .ID }}', '_blank')">
+                    <td class="share-name-col">
                         <div>
                             <i class="material-icons">description</i>
                             <span>{{ .Name }}</span>
                         </div>
                     </td>
-                    <td>
+                    <td class="desktop-only">
                         {{ formatSmart .CreatedAt }}
                     </td>
-                    <td>{{ humanReadableSize .Size }}</td>
-                    <td>{{ .SharedByName }} </td>
+                    <td class="desktop-only">{{ humanReadableSize .Size }}</td>
+                    <td class="desktop-only">{{ .SharedByName }} </td>
+                    <td class="desktop-only">{{ .Permission }} </td>
+                    <td class="share-expires-col">{{ formatSmartNullable .ExpiresAt }} </td>
                 </tr>
                 {{ end }}
                 </tbody>

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
 	"time"
@@ -23,6 +24,12 @@ func GetTemplateFunctions() template.FuncMap {
 
 		"formatSmart": func(t time.Time) string {
 			return timezone.TZ.FormatSmart(t)
+		},
+		"formatSmartNullable": func(t sql.NullTime) string {
+			if t.Valid {
+				return timezone.TZ.FormatFull(t.Time)
+			}
+			return "-"
 		},
 		"formatFull": func(t time.Time) string {
 			return timezone.TZ.FormatFull(t)

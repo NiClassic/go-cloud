@@ -387,63 +387,49 @@ form input:focus {
 }
 
 #share-list {
-    width: 100%;
-    overflow-x: auto;
+    overflow-x: hidden;
     padding: 0.5rem;
 }
 
 #share-list table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
-    text-align: left;
-}
-
-#share-list th,
-#share-list td {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    padding-top: 0.75rem;
-    white-space: nowrap;
 }
 
 #share-list th {
     color: var(--color-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
 }
 
-#share-list  col:nth-child(1) {
-    width: 70%;
-}
-#share-list col:nth-child(2),
-#share-list col:nth-child(3),
-#share-list col:nth-child(4) {
-    width: 10%;
-}
-
-#share-list td:first-child {
-    max-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+#share-list th, #share-list td {
+    padding: .75rem 1.25rem;
+    text-align: left;
+    /*border-bottom: 1px solid #e2e8f0;*/
+    border: none;
     white-space: nowrap;
 }
 
-#share-list td:first-child div {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+#share-list #share-list td.share-name-col, #share-list th.share-name-col {
+    max-width: 1px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-#share-list tr div {
+.material-icons {
+    vertical-align: middle;
+    font-size: 1.125rem;
+}
+
+#share-list tbody tr:hover {
+    background: #f1f5f9;
     cursor: pointer;
 }
 
 @media (max-width: 640px) {
     #file-list th:nth-child(3),
     #file-list td:nth-child(3) {
-        display: none; /* hide size column on mobile */
+        display: none;
     }
 
     #file-list td:first-child {
@@ -455,22 +441,15 @@ form input:focus {
         text-align: right;
     }
 
-    #share-list th:nth-child(3),
-    #share-list td:nth-child(3) {
-        display: none; /* hide size column on mobile */
+    #share-list th.share-name-col   { width: 70%; }
+    #share-list th.share-expires-col { width: 30%; }
+
+    #share-list th:not(.share-name-col):not(.share-expires-col),
+    #share-list td:not(.share-name-col):not(.share-expires-col) {
+        display: none;
     }
 
-    #share-list td:first-child {
-        width: 70%;
-    }
-
-    #share-list td:nth-child(2) {
-        width: 15%;
-        text-align: right;
-    }
-
-    #share-list td:nth-child(4) {
-        width: 15%;
-        text-align: right;
+    #share-list thead tr {
+        display: table-row;
     }
 }

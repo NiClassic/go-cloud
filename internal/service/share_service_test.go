@@ -240,8 +240,8 @@ func TestFileShareService_GetSharedFilesForRecipient(t *testing.T) {
 			name:   "gets non-expired shares for recipient",
 			userID: recipientID,
 			want: []repository.SharedFile{
-				{ID: file1ID, Name: "somestuff.txt", Size: 1024},
-				{ID: file2ID, Name: "somestuff2.txt", Size: 1024},
+				{ID: file1ID, Name: "somestuff.txt", Size: 1024, Permission: "read", ExpiresAt: sql.NullTime{Valid: true, Time: future}},
+				{ID: file2ID, Name: "somestuff2.txt", Size: 1024, Permission: "write", ExpiresAt: sql.NullTime{Valid: false}},
 			},
 		},
 		{

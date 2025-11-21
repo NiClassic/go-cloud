@@ -19,8 +19,10 @@ type SharedFile struct {
 	ID           int64
 	Name         string
 	CreatedAt    time.Time
+	ExpiresAt    sql.NullTime
 	Size         int64
 	SharedByName string
+	Permission   string
 }
 
 type FileShareRepositoryImpl struct {
@@ -76,7 +78,7 @@ func (r *FileShareRepositoryImpl) GetByID(ctx context.Context, shareID int64) (*
 
 func (r *FileShareRepositoryImpl) GetSharedFilesForRecipient(ctx context.Context, userID int64) ([]SharedFile, error) {
 	query := `
-        SELECT f.ID, f.name, f.created_at, f.size, u.username
+        SELECT f.ID, f.name, f.created_at, s.expires_at, f.size, u.username, s.permission
         FROM file_shares s
         JOIN files f ON s.file_id = f.id
 		JOIN users u ON u.id = f.user_id
@@ -91,7 +93,7 @@ func (r *FileShareRepositoryImpl) GetSharedFilesForRecipient(ctx context.Context
 	var shares []SharedFile
 	for rows.Next() {
 		var s SharedFile
-		if err = rows.Scan(&s.ID, &s.Name, &s.CreatedAt, &s.Size, &s.SharedByName); err != nil {
+		if err = rows.Scan(&s.ID, &s.Name, &s.CreatedAt, &s.ExpiresAt, &s.Size, &s.SharedByName, &s.Permission); err != nil {
 			return nil, err
 		}
 		shares = append(shares, s)
