@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"github.com/NiClassic/go-cloud/config"
 	"github.com/NiClassic/go-cloud/internal/logger"
 	"github.com/NiClassic/go-cloud/internal/model"
 	"github.com/NiClassic/go-cloud/internal/path"
 	"github.com/NiClassic/go-cloud/internal/service"
 	"github.com/NiClassic/go-cloud/internal/storage"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,19 +23,20 @@ type fileRow struct {
 	IsDir     bool
 	Path      string
 }
-type PersonalFileUploadHandler struct {
+type FileUploadHandler struct {
 	*baseHandler
 	sto           storage.FileManager
-	fileService   *service.PersonalFileService
+	fileService   *service.FileService
 	folderService *service.FolderService
+	shareService  *service.FileShareService
 	converter     *path.Converter
 }
 
-func NewPersonalFileUploadHandler(cfg *config.Config, r *Renderer, sto storage.FileManager, fileService *service.PersonalFileService, folderService *service.FolderService, c *path.Converter) *PersonalFileUploadHandler {
-	return &PersonalFileUploadHandler{newBaseHandler(cfg, r), sto, fileService, folderService, c}
+func NewFileUploadHandler(cfg *config.Config, r *Renderer, sto storage.FileManager, fileService *service.FileService, folderService *service.FolderService, shareService *service.FileShareService, c *path.Converter) *FileUploadHandler {
+	return &FileUploadHandler{newBaseHandler(cfg, r), sto, fileService, folderService, shareService, c}
 }
 
-func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
+func (p *FileUploadHandler) filesToRows(files []*model.File) []fileRow {
 	rows := make([]fileRow, len(files))
 	for i, f := range files {
 		rows[i] = fileRow{
@@ -47,7 +50,7 @@ func (p *PersonalFileUploadHandler) filesToRows(files []*model.File) []fileRow {
 	return rows
 }
 
-func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fileRow {
+func (p *FileUploadHandler) foldersToRows(folders []*model.Folder) []fileRow {
 	rows := make([]fileRow, len(folders))
 	for i, f := range folders {
 		rows[i] = fileRow{
@@ -62,7 +65,7 @@ func (p *PersonalFileUploadHandler) foldersToRows(folders []*model.Folder) []fil
 	return rows
 }
 
-func (p *PersonalFileUploadHandler) RedirectNoTrailingSlash(w http.ResponseWriter, r *http.Request) {
+func (p *FileUploadHandler) RedirectNoTrailingSlash(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/files/", http.StatusSeeOther)
 }
 
@@ -72,7 +75,7 @@ type breadCrumbItem struct {
 	Current bool
 }
 
-func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
+func (p *FileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	user := ExtractUserOrRedirect(w, r)
 	if user == nil {
@@ -113,7 +116,7 @@ func (p *PersonalFileUploadHandler) ListFiles(w http.ResponseWriter, r *http.Req
 	})
 }
 
-func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.Request) {
+func (p *FileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.Request) {
 	logger.Request(r)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -166,37 +169,36 @@ func (p *PersonalFileUploadHandler) UploadFiles(w http.ResponseWriter, r *http.R
 	})
 }
 
-func (p *PersonalFileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
-	logger.Request(r)
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		logger.InvalidMethod(r)
-		return
-	}
-
+func (p *FileUploadHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
 	user := ExtractUserOrRedirect(w, r)
 	if user == nil {
 		return
 	}
 
-	// Extract file ID from URL
 	idStr := strings.TrimPrefix(r.URL.Path, "/download/")
 	fileID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid file ID", http.StatusBadRequest)
-		return
-	}
-
-	// Get file from database
-	file, err := p.fileService.GetFileById(r.Context(), fileID)
-	if err != nil || file.UserID != user.ID {
 		http.NotFound(w, r)
 		return
 	}
 
-	// File location is already the full filesystem path
-	// But we can use pathUtil to verify or rebuild if needed
-	fullPath := p.converter.GetFullFilePath(user.Username, file.Location)
+	var (
+		rdr  io.ReadCloser
+		size int64
+		name string
+	)
+	rdr, size, name, err = p.fileService.DownloadOwn(r.Context(), user.Username, user.ID, fileID)
+	if errors.Is(err, service.ErrNotOwner) {
+		rdr, size, name, err = p.fileService.DownloadShared(r.Context(), user.ID, fileID)
+	}
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer rdr.Close()
 
-	http.ServeFile(w, r, fullPath)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+	_, _ = io.Copy(w, rdr)
 }

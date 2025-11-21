@@ -11,7 +11,7 @@ type Services struct {
 	Auth       *AuthService
 	UploadLink *UploadLinkService
 	LinkUnlock *LinkUnlockService
-	PFile      *PersonalFileService
+	PFile      *FileService
 	Folder     *FolderService
 	FileShare  *FileShareService
 }
@@ -23,7 +23,7 @@ func InitServices(db *sql.DB, st storage.FileManager, c *path.Converter) *Servic
 	sessRepo := repository.NewSessionRepository(db)
 	linkRepo := repository.NewUploadLinkRepository(db)
 	linkUnlockRepo := repository.NewLinkUnlockRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
+	fileRepo := repository.NewFileRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
 	fileShareRepo := repository.NewFileShareRepositoryImpl(db)
 
@@ -31,7 +31,7 @@ func InitServices(db *sql.DB, st storage.FileManager, c *path.Converter) *Servic
 	linkSvc := NewUploadLinkService(linkRepo)
 	linkUnlockSvc := NewLinkUnlockService(linkUnlockRepo)
 	folderSvc := NewFolderService(folderRepo, fileRepo, st, c)
-	pFileSvc := NewPersonalFileService(st, fileRepo, c)
+	pFileSvc := NewFileService(st, fileRepo, userRepo, fileShareRepo, c)
 	fileShareSvc := NewFileShareService(*fileRepo, fileShareRepo)
 
 	return &Services{

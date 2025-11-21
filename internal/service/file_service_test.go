@@ -16,7 +16,7 @@ import (
 	"github.com/NiClassic/go-cloud/internal/testutil"
 )
 
-func setupPersonalFileTest(t *testing.T) (*service.PersonalFileService, *service.FolderService, *model.User, int64) {
+func setupPersonalFileTest(t *testing.T) (*service.FileService, *service.FolderService, *model.User, int64) {
 	t.Helper()
 
 	db := testutil.SetupTestDB(t)
@@ -24,12 +24,13 @@ func setupPersonalFileTest(t *testing.T) (*service.PersonalFileService, *service
 	tmpDir := testutil.SetupTestStorage(t)
 
 	userRepo := repository.NewUserRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
+	fileRepo := repository.NewFileRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
+	fileShareRepo := repository.NewFileShareRepositoryImpl(db)
 	st := storage.NewIOStorage(tmpDir)
 	c := path.New(tmpDir)
 
-	fileSvc := service.NewPersonalFileService(st, fileRepo, c)
+	fileSvc := service.NewFileService(st, fileRepo, userRepo, fileShareRepo, c)
 	folderSvc := service.NewFolderService(folderRepo, fileRepo, st, c)
 
 	// Create a test user

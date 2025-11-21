@@ -20,12 +20,12 @@ var (
 
 type FolderService struct {
 	folderRepo *repository.FolderRepository
-	fileRepo   *repository.PersonalFileRepository
+	fileRepo   *repository.FileRepository
 	st         storage.FileManager
 	converter  *path.Converter
 }
 
-func NewFolderService(folderRepo *repository.FolderRepository, fileRepo *repository.PersonalFileRepository, st storage.FileManager, c *path.Converter) *FolderService {
+func NewFolderService(folderRepo *repository.FolderRepository, fileRepo *repository.FileRepository, st storage.FileManager, c *path.Converter) *FolderService {
 	return &FolderService{folderRepo, fileRepo, st, c}
 }
 

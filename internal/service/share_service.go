@@ -15,11 +15,11 @@ var (
 )
 
 type FileShareService struct {
-	fileRepo      repository.PersonalFileRepository
+	fileRepo      repository.FileRepository
 	fileShareRepo repository.FileShareRepository
 }
 
-func NewFileShareService(fr repository.PersonalFileRepository, fsr repository.FileShareRepository) *FileShareService {
+func NewFileShareService(fr repository.FileRepository, fsr repository.FileShareRepository) *FileShareService {
 	return &FileShareService{fr, fsr}
 }
 

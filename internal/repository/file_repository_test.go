@@ -7,12 +7,12 @@ import (
 	"github.com/NiClassic/go-cloud/internal/testutil"
 )
 
-func setupPersonalFileRepositoryTest(t *testing.T) (*repository.PersonalFileRepository, *repository.UserRepository, *repository.FolderRepository) {
+func setupPersonalFileRepositoryTest(t *testing.T) (*repository.FileRepository, *repository.UserRepository, *repository.FolderRepository) {
 	t.Helper()
 
 	db := testutil.SetupTestDB(t)
 
-	fileRepo := repository.NewPersonalFileRepository(db)
+	fileRepo := repository.NewFileRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
 	return fileRepo, userRepo, folderRepo
@@ -481,7 +481,7 @@ func TestPersonalFileRepository_FolderSetNull(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	ctx := testutil.TestContext(t)
 
-	fileRepo := repository.NewPersonalFileRepository(db)
+	fileRepo := repository.NewFileRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
 

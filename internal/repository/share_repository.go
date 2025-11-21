@@ -11,6 +11,7 @@ type FileShareRepository interface {
 	Create(ctx context.Context, fs *model.FileShare) error
 	GetByRecipient(ctx context.Context, userID int64) ([]model.FileShare, error)
 	GetSharedFilesForRecipient(ctx context.Context, userID int64) ([]SharedFile, error)
+	GetByFileAndRecipient(ctx context.Context, fileID, recipientID int64) (*SharedFile, error)
 	GetByID(ctx context.Context, fileShareID int64) (*model.FileShare, error)
 	Delete(ctx context.Context, id int64) error
 }
@@ -33,6 +34,24 @@ func NewFileShareRepositoryImpl(db *sql.DB) *FileShareRepositoryImpl {
 	return &FileShareRepositoryImpl{db}
 }
 
+func (r *FileShareRepositoryImpl) GetByFileAndRecipient(ctx context.Context, fileID, recipientID int64) (*SharedFile, error) {
+	query := `
+        SELECT f.ID, f.name, f.created_at, s.expires_at, f.size, u.username, s.permission
+        FROM file_shares s
+        JOIN files f ON s.file_id = f.id
+		JOIN users u ON u.id = f.user_id
+        WHERE s.file_id = ? AND s.shared_with_id = ?
+          AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))`
+	row := r.db.QueryRowContext(ctx, query, fileID, recipientID)
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+	var s SharedFile
+	if err := row.Scan(&s.ID, &s.Name, &s.CreatedAt, &s.ExpiresAt, &s.Size, &s.SharedByName, &s.Permission); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
 func (r *FileShareRepositoryImpl) Create(ctx context.Context, fs *model.FileShare) error {
 	const q = `INSERT INTO file_shares (file_id, shared_with_id, permission, expires_at) VALUES (?, ?, ?, ?)`
 	res, err := r.db.ExecContext(ctx, q, fs.FileID, fs.SharedWithID, fs.Permission, fs.ExpiresAt)

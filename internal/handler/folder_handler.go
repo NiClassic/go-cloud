@@ -13,10 +13,10 @@ import (
 type FolderHandler struct {
 	*baseHandler
 	folderSvc *service.FolderService
-	fileSvc   *service.PersonalFileService
+	fileSvc   *service.FileService
 }
 
-func NewFolderHandler(cfg *config.Config, r *Renderer, folderSvc *service.FolderService, fileSvc *service.PersonalFileService) *FolderHandler {
+func NewFolderHandler(cfg *config.Config, r *Renderer, folderSvc *service.FolderService, fileSvc *service.FileService) *FolderHandler {
 	return &FolderHandler{
 		baseHandler: newBaseHandler(cfg, r),
 		folderSvc:   folderSvc,

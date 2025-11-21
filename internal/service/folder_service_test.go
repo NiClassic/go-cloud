@@ -19,7 +19,7 @@ func setupFolderTest(t *testing.T) (*service.FolderService, int64, string, strin
 
 	userRepo := repository.NewUserRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
-	fileRepo := repository.NewPersonalFileRepository(db)
+	fileRepo := repository.NewFileRepository(db)
 	st := storage.NewIOStorage(tmpDir)
 	c := path.New(tmpDir)
 

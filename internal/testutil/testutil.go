@@ -95,7 +95,7 @@ func InsertTestFolder(t *testing.T, userID int64, name string, r *repository.Fol
 	return id
 }
 
-func InsertTestFile(t *testing.T, userID int64, parentID int64, name string, r *repository.PersonalFileRepository) int64 {
+func InsertTestFile(t *testing.T, userID int64, parentID int64, name string, r *repository.FileRepository) int64 {
 	t.Helper()
 	id, err := r.Insert(TestContext(t), name, "text/plain", "someuser"+name, "somehash", userID, 1024, parentID)
 	if err != nil {

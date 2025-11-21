@@ -11,7 +11,7 @@ type TestDeps struct {
 	DB     *sql.DB
 	User   *repository.UserRepository
 	Folder *repository.FolderRepository
-	File   *repository.PersonalFileRepository
+	File   *repository.FileRepository
 	Share  *repository.FileShareRepositoryImpl
 	Ctx    context.Context
 }
@@ -23,7 +23,7 @@ func NewTestDeps(t *testing.T) *TestDeps {
 		DB:     db,
 		User:   repository.NewUserRepository(db),
 		Folder: repository.NewFolderRepository(db),
-		File:   repository.NewPersonalFileRepository(db),
+		File:   repository.NewFileRepository(db),
 		Share:  repository.NewFileShareRepositoryImpl(db),
 		Ctx:    TestContext(t),
 	}
